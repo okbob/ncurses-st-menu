@@ -46,6 +46,8 @@ typedef struct
 #define ST_MENU_STYLE_PERFECT		7
 #define ST_MENU_STYLE_NOCOLOR		8
 #define ST_MENU_STYLE_ONECOLOR		9
+#define ST_MENU_STYLE_TURBO			10
+#define ST_MENU_STYLE_PDMENU		11
 
 typedef struct
 {
@@ -64,7 +66,7 @@ typedef struct
 } ST_MENU_STATE;
 
 static void
-load_buildin_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
+st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 {
 	switch (style)
 	{
@@ -293,6 +295,51 @@ load_buildin_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 
 			break;
 
+		case ST_MENU_STYLE_TURBO:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = 0;
+			init_pair(start_from_cpn++, COLOR_RED, COLOR_WHITE);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_PDMENU:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_CYAN);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = 0;
+			init_pair(start_from_cpn++, COLOR_CYAN, COLOR_BLACK);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
 	}
 
 	config->draw_box = true;
@@ -537,7 +584,7 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 }
 
 ST_MENU_STATE *
-st_post_menu(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title)
+st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title)
 {
 	ST_MENU_STATE *menustate;
 	int		rows, cols;
@@ -581,8 +628,6 @@ st_post_menu(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, ch
 
 	wbkgd(menustate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
 
-	update_panels();
-
 	/* draw area can be same like window or smaller */
 	if (config->wide_vborders || config->wide_hborders)
 	{
@@ -597,12 +642,23 @@ st_post_menu(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, ch
 	else
 		menustate->draw_area = menustate->window;
 
+	hide_panel(menustate->panel);
+
+	return menustate;
+}
+
+void
+st_menu_post(ST_MENU_STATE *menustate)
+{
+	show_panel(menustate->panel);
+	top_panel(menustate->panel);
+
+	update_panels();
+
 	curs_set(0);
 	noecho();
 
 	PullDownMenuDraw(menustate);
-
-	return menustate;
 }
 
 void
@@ -741,8 +797,6 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	load_buildin_style(&config, 1, 2);
-
 	config.force8bit = false;
 
 	setlocale(LC_ALL, "");
@@ -758,7 +812,7 @@ main()
 
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
-	load_buildin_style(&config, 9, 1);
+	st_menu_load_style(&config, 11, 2);
 
 
 	getmaxyx(stdscr, maxy, maxx);
@@ -772,7 +826,8 @@ main()
 
 	mainpanel = new_panel(mainwin);
 
-	menustate = st_post_menu(&config, testmenu, 1, 0, NULL);
+	menustate = st_menu_new(&config, testmenu, 1, 0, NULL);
+	st_menu_post(menustate);
 
 	doupdate();
 
