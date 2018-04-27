@@ -21,12 +21,28 @@ typedef struct
 
 typedef struct
 {
-	int		color_theme;
 	bool	force8bit;
 	bool	wide_vborders;			/* wide vertical menu borders like Turbo Vision */
 	bool	wide_hborders;			/* wide horizontal menu borders like custom menu mc */
 	bool	draw_box;				/* when true, then box is created */
+	bool	left_alligned_helpers;	/* when true, a helpers are left alligned */
+	int		menu_background_cpn;	/* draw area color pair number */
+	int		menu_background_attr;	/* draw area attributte */
+	int		accelerator_cpn;		/* color pair of accelerators */
+	int		accelerator_attr;		/* accelerator attributes */
+	int		cursor_cpn;				/* cursor color pair */
+	int		cursor_attr;			/* cursor attributte */
+	int		cursor_accel_cpn;		/* color pair of accelerator on cursor row */
+	int		cursor_accel_attr;		/* attributte of of accelerator on cursor row */
 } ST_MENU_CONFIG;
+
+#define ST_MENU_STYLE_MCB			0
+#define ST_MENU_STYLE_MC			1
+#define ST_MENU_STYLE_VISION		2
+#define ST_MENU_STYLE_DOS			3
+#define ST_MENU_STYLE_FAND_1		4
+#define ST_MENU_STYLE_FAND_2		5
+#define ST_MENU_STYLE_FOXPRO		6
 
 typedef struct
 {
@@ -43,6 +59,177 @@ typedef struct
 	bool		pressed_accelerator;
 	int			cursor_code;
 } ST_MENU_STATE;
+
+static void
+load_buildin_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
+{
+	switch (style)
+	{
+		case ST_MENU_STYLE_MCB:
+			use_default_colors();
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = 0;
+			init_pair(start_from_cpn++, -1, -1);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->left_alligned_helpers = true;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_MC:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_CYAN);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_CYAN);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLACK);
+
+			config->left_alligned_helpers = true;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_VISION:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = 0;
+			init_pair(start_from_cpn++, COLOR_RED, COLOR_WHITE);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_GREEN);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = 0;
+			init_pair(start_from_cpn++, COLOR_RED, COLOR_GREEN);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = true;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_DOS:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_WHITE);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_FAND_1:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = 0;
+			init_pair(start_from_cpn++, COLOR_RED, COLOR_CYAN);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_FAND_2:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_CYAN, COLOR_CYAN);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_FOXPRO:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_WHITE);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_CYAN);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+	}
+
+	config->draw_box = true;
+}
 
 static int
 max_int(int a, int b)
@@ -139,15 +326,26 @@ PullDownMenuContentSize(ST_MENU_CONFIG *config, ST_MENU *menu, int *rows, int *c
 				help_width = config->force8bit ? strlen(menu->help) : utf_string_dsplen(menu->help, SIZE_MAX);
 			}
 
-			max_text_width = max_int(max_text_width, 1 + text_width + 2);
-			max_help_width = max_int(max_help_width, help_width);
+			if (config->left_alligned_helpers)
+			{
+				max_text_width = max_int(max_text_width, 1 + text_width + 2);
+				max_help_width = max_int(max_help_width, help_width);
+			}
+			else
+				*columns = max_int(*columns, 1 + text_width + 1 + (max_help_width > 0 ? help_width + 4 : 0));
 		}
 
 		menu += 1;
 	}
 
-	*columns = max_text_width + (max_help_width > 0 ? max_help_width + 1 : 0);
-	*help_x_pos = max_text_width;
+	if (config->left_alligned_helpers)
+	{
+		*columns = max_text_width + (max_help_width > 0 ? max_help_width + 1 : 0);
+		*help_x_pos = max_text_width;
+	}
+	else
+		*help_x_pos = -1;
+
 	*naccelerators = naccel;
 }
 
@@ -159,6 +357,7 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 	int		text_min_x, text_max_x;
 	bool	draw_box = menustate->config->draw_box;
 	ST_MENU	   *menu = menustate->menu;
+	ST_MENU_CONFIG	*config = menustate->config;
 	WINDOW	   *draw_area = menustate->draw_area;
 
 	getmaxyx(draw_area, maxy, maxx);
@@ -199,10 +398,9 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 
 			if (is_cursor_row)
 			{
-				//mvwchgat(draw_area, row - (draw_box ? 0 : 1), text_min_x, text_max_x - text_min_x, A_BOLD, COLOR_PAIR(3), 0);
-				mvwchgat(draw_area, row - (draw_box ? 0 : 1), text_min_x, text_max_x - text_min_x, A_BOLD, 3, 0);
-				//wattron(draw_area, COLOR_PAIR(3) | A_BOLD);
-				wattron(draw_area, COLOR_PAIR(3) | A_BOLD );
+				mvwchgat(draw_area, row - (draw_box ? 0 : 1), text_min_x, text_max_x - text_min_x,
+						config->cursor_attr, config->cursor_cpn, NULL);
+				wattron(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 			}
 
 			wmove(draw_area, row - (draw_box ? 0 : 1), text_min_x + 1);
@@ -220,14 +418,17 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 
 					if (!highlight)
 					{
-						wattron(draw_area, COLOR_PAIR(is_cursor_row ? 5 : 4) | A_BOLD);
+						wattron(draw_area,
+							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
+									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
 					}
 					else
 					{
-						wattroff(draw_area, COLOR_PAIR(is_cursor_row ? 5 : 4) | A_BOLD);
+						wattroff(draw_area,
+							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
+									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
 						if (is_cursor_row)
-							//wattron(draw_area, COLOR_PAIR(3) | A_BOLD);
-							wattron(draw_area, COLOR_PAIR(3));
+							wattron(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 					}
 
 					highlight = !highlight;
@@ -244,12 +445,21 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 
 			if (menu->help != NULL)
 			{
-				wmove(draw_area, row - (draw_box ? 0 : 1), menustate->help_x_pos + (draw_box ? 1 : 0));
+				if (menustate->help_x_pos != -1)
+				{
+					wmove(draw_area, row - (draw_box ? 0 : 1), menustate->help_x_pos + (draw_box ? 1 : 0));
+				}
+				else
+				{
+					int dspl = menustate->config->force8bit ? strlen(menu->help) : utf_string_dsplen(menu->help, SIZE_MAX);
+
+					wmove(draw_area, row - (draw_box ? 0 : 1), text_max_x - dspl - 1);
+				}
 				waddstr(draw_area, menu->help);
 			}
 
 			if (is_cursor_row)
-				wattroff(draw_area, COLOR_PAIR(3) | A_BOLD);
+				wattroff(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 		}
 
 		menu += 1;
@@ -302,8 +512,7 @@ st_post_menu(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, ch
 	menustate->window = newwin(rows, cols, begin_y, begin_x);
 	menustate->panel = new_panel(menustate->window);
 
-	wbkgd(menustate->window, COLOR_PAIR(2) | A_BOLD);
-	//wbkgd(menustate->window, COLOR_PAIR(2));
+	wbkgd(menustate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
 
 	update_panels();
 
@@ -316,7 +525,7 @@ st_post_menu(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, ch
 			config->wide_hborders ? 1 : 0,
 			config->wide_vborders ? 1 : 0);
 
-		wbkgd(menustate->draw_area, COLOR_PAIR(2) | A_BOLD);
+		wbkgd(menustate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
 	}
 	else
 		menustate->draw_area = menustate->window;
@@ -465,10 +674,9 @@ main()
 		{NULL, -1, NULL}
 	};
 
+	load_buildin_style(&config, 1, 2);
+
 	config.force8bit = false;
-	config.draw_box = true;
-	config.wide_vborders = false;
-	config.wide_hborders = false;
 
 	setlocale(LC_ALL, "");
 
@@ -479,22 +687,12 @@ main()
 	noecho();
 	keypad(stdscr, true);
 
-	init_pair(1, COLOR_WHITE, COLOR_BLUE);
-	init_pair(2, COLOR_WHITE, COLOR_CYAN);
-	init_pair(3, COLOR_WHITE, COLOR_BLACK);
-	init_pair(4, COLOR_YELLOW, COLOR_CYAN);
-	init_pair(5, COLOR_YELLOW, COLOR_BLACK);
-
-
-/* msdos
-
-	init_pair(1, COLOR_WHITE, COLOR_BLUE);
-	init_pair(2, COLOR_BLACK, COLOR_WHITE);
-	init_pair(3, COLOR_WHITE, COLOR_BLACK);
-	init_pair(4, COLOR_WHITE, COLOR_WHITE);
-	init_pair(5, COLOR_WHITE, COLOR_BLACK);
- */
 	refresh();
+
+	init_pair(1, COLOR_WHITE, COLOR_BLUE);
+
+	load_buildin_style(&config, 1, 2);
+
 
 	getmaxyx(stdscr, maxy, maxx);
 
