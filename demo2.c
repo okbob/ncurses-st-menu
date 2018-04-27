@@ -43,6 +43,9 @@ typedef struct
 #define ST_MENU_STYLE_FAND_1		4
 #define ST_MENU_STYLE_FAND_2		5
 #define ST_MENU_STYLE_FOXPRO		6
+#define ST_MENU_STYLE_PERFECT		7
+#define ST_MENU_STYLE_NOCOLOR		8
+#define ST_MENU_STYLE_ONECOLOR		9
 
 typedef struct
 {
@@ -226,6 +229,70 @@ load_buildin_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->wide_hborders = false;
 
 			break;
+
+		case ST_MENU_STYLE_PERFECT:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLUE, COLOR_WHITE);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = 0;
+			init_pair(start_from_cpn++, COLOR_RED, COLOR_WHITE);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_RED);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_RED);
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_NOCOLOR:
+			use_default_colors();
+			config->menu_background_cpn = 0;
+			config->menu_background_attr = 0;
+
+			config->accelerator_cpn = 0;
+			config->accelerator_attr = A_UNDERLINE;
+
+			config->cursor_cpn = 0;
+			config->cursor_attr = A_REVERSE;
+
+			config->cursor_accel_cpn = 0;
+			config->cursor_accel_attr = A_UNDERLINE | A_REVERSE;
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
+		case ST_MENU_STYLE_ONECOLOR:
+			use_default_colors();
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = 0;
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_UNDERLINE;
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = A_REVERSE;
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_UNDERLINE | A_REVERSE;
+
+			config->left_alligned_helpers = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+
+			break;
+
 	}
 
 	config->draw_box = true;
@@ -302,7 +369,7 @@ PullDownMenuContentSize(ST_MENU_CONFIG *config, ST_MENU *menu, int *rows, int *c
 	while (menu->text != NULL)
 	{
 		*rows += 1;
-		if (*menu->text && strcmp(menu->text, "---") != 0)
+		if (*menu->text && strncmp(menu->text, "--", 2) != 0)
 		{
 			int text_width = 0;
 			int help_width = 0;
@@ -691,7 +758,7 @@ main()
 
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
-	load_buildin_style(&config, 1, 2);
+	load_buildin_style(&config, 9, 1);
 
 
 	getmaxyx(stdscr, maxy, maxx);
