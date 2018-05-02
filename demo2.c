@@ -28,8 +28,11 @@ typedef struct
 	bool	draw_box;				/* when true, then box is created */
 	bool	left_alligned_helpers;	/* when true, a helpers are left alligned */
 	bool	extra_inner_space;		/* when true, then there 2 spaces between text and border */
+	int		shadow_width;			/* when shadow_width is higher than zero, shadow is visible */
 	int		menu_background_cpn;	/* draw area color pair number */
 	int		menu_background_attr;	/* draw area attributte */
+	int		menu_shadow_cpn;	/* draw area color pair number */
+	int		menu_shadow_attr;	/* draw area attributte */
 	int		accelerator_cpn;		/* color pair of accelerators */
 	int		accelerator_attr;		/* accelerator attributes */
 	int		cursor_cpn;				/* cursor color pair */
@@ -64,6 +67,8 @@ typedef struct _ST_MENU_STATE
 	WINDOW	   *draw_area;
 	WINDOW	   *window;
 	PANEL	   *panel;
+	WINDOW	   *shadow_window;
+	PANEL	   *shadow_panel;
 	int			cursor_row;
 	ST_MENU_ACCELERATOR		*accelerators;
 	int			naccelerators;
@@ -96,6 +101,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
@@ -116,6 +125,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 5;
 			config->init_text_space = 2;
 			config->menu_bar_menu_offset = 0;
+			config->shadow_width = 0;
 
 			break;
 
@@ -123,6 +133,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_CYAN);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_BOLD;
@@ -145,6 +159,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 5;
 			config->init_text_space = 2;
 			config->menu_bar_menu_offset = 0;
+			config->shadow_width = 0;
 
 			break;
 
@@ -152,6 +167,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = 0;
@@ -174,6 +193,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 2;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 2;
 
 			break;
 
@@ -181,6 +201,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_BOLD;
@@ -203,6 +227,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 2;
 
 			break;
 
@@ -210,6 +235,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = 0;
@@ -232,6 +261,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = -1;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 2;
+			config->shadow_width = 2;
 
 			break;
 
@@ -239,6 +269,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_BOLD;
@@ -261,6 +295,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = -1;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 2;
+			config->shadow_width = 2;
 
 			break;
 
@@ -268,6 +303,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_BOLD;
@@ -290,6 +329,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 2;
 
 			break;
 
@@ -297,6 +337,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = 0;
@@ -319,6 +363,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 2;
 
 			break;
 
@@ -326,6 +371,9 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			use_default_colors();
 			config->menu_background_cpn = 0;
 			config->menu_background_attr = 0;
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = A_REVERSE;
 
 			config->accelerator_cpn = 0;
 			config->accelerator_attr = A_UNDERLINE;
@@ -345,6 +393,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 0;
 
 			break;
 
@@ -352,6 +401,9 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			use_default_colors();
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = A_REVERSE;
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_UNDERLINE;
@@ -376,6 +428,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 0;
 
 			break;
 
@@ -405,6 +458,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 2;
 
 			break;
 
@@ -412,6 +466,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_BOLD;
@@ -434,6 +492,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->text_space = 2;
 			config->init_text_space = 1;
 			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 2;
 
 			break;
 	}
@@ -828,6 +887,19 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 	if (config->wide_hborders)
 		rows += 2;
 
+	if (config->shadow_width > 0)
+	{
+		menustate->shadow_window = newwin(rows, cols, begin_y + 1, begin_x + config->shadow_width);
+		menustate->shadow_panel = new_panel(menustate->shadow_window);
+
+		wbkgd(menustate->shadow_window, COLOR_PAIR(config->menu_shadow_cpn) | config->menu_shadow_attr);
+	}
+	else
+	{
+		menustate->shadow_window = NULL;
+		menustate->shadow_panel = NULL;
+	}
+
 	menustate->window = newwin(rows, cols, begin_y, begin_x);
 	menustate->panel = new_panel(menustate->window);
 
@@ -848,6 +920,8 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 		menustate->draw_area = menustate->window;
 
 	hide_panel(menustate->panel);
+	if (menustate->shadow_panel != NULL)
+		hide_panel(menustate->shadow_panel);
 
 	return menustate;
 }
@@ -856,6 +930,9 @@ void
 st_menu_post(ST_MENU_STATE *menustate)
 {
 	menustate->is_visible = true;
+
+	if (menustate->shadow_panel != NULL)
+		show_panel(menustate->shadow_panel);
 
 	show_panel(menustate->panel);
 	top_panel(menustate->panel);
@@ -877,6 +954,8 @@ st_menu_unpost(ST_MENU_STATE *menustate)
 	menustate->is_visible = false;
 
 	hide_panel(menustate->panel);
+	if (menustate->shadow_panel != NULL)
+		hide_panel(menustate->shadow_panel);
 	update_panels();
 }
 
@@ -1059,6 +1138,10 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 
 	menustate->window = newwin(1, maxx, 0, 0);
 	menustate->panel = new_panel(menustate->window);
+
+	menustate->shadow_window = NULL;
+	menustate->shadow_panel = NULL;
+
 	menustate->config = config;
 	menustate->menu = menu;
 	menustate->cursor_row = 1;
@@ -1241,7 +1324,7 @@ main()
 
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
-	st_menu_load_style(&config, 0, 2);
+	st_menu_load_style(&config, 10, 2);
 
 	getmaxyx(stdscr, maxy, maxx);
 
