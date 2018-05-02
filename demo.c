@@ -14,7 +14,7 @@ int main()
 	cbreak();
 	noecho();
 
-	init_pair(1, COLOR_WHITE, COLOR_BLUE);
+	init_pair(1, COLOR_BLACK, COLOR_WHITE);
 	init_pair(2, COLOR_BLACK, COLOR_BLACK);
 
 refresh();
@@ -31,27 +31,6 @@ refresh();
 //printf("%d %d\n", maxy, maxx);
 //exit(0);
 
-
-	for (i = 0; i <= maxy; i++)
-		for (j = 0; j <= maxx; j++)
-		{
-			bool bold = false;
-
-			if (0 && k++ % 2 == 0)
-			{
-				bold = true;
-
-				wattron(mainwin, A_BOLD);
-			}
-
-			mvwaddch(mainwin, i, j, ACS_CKBOARD);
-			//mvwaddch(mainwin, i, j, ACS_CKBOARD);
-			//mvwprintw(mainwin, i, j, "%c", ACS_VLINE);
-
-			if (bold)
-				wattroff(mainwin, A_BOLD);
-
-		}
 
 	wrefresh(mainwin);
 

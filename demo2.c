@@ -74,6 +74,7 @@ typedef struct _ST_MENU_STATE
 	int			naccelerators;
 	ST_MENU_CONFIG *config;
 	int			help_x_pos;
+	int			nitems;									/* number of menu items */
 	int		   *bar_fields_x_pos;						/* array of x positions of menubar fields */
 	char	   *title;
 	bool		pressed_accelerator;
@@ -90,6 +91,10 @@ ST_MENU_STATE *st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, i
 void st_menu_post(ST_MENU_STATE *menustate);
 
 WINDOW *mainwin;
+
+MEVENT		mevent;
+bool		mevent_is_active;				/* ungetmouse doesn't work */
+
 
 static void
 st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
@@ -437,6 +442,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = 0;
@@ -955,6 +964,7 @@ void
 st_menu_post(ST_MENU_STATE *menustate)
 {
 	menustate->is_visible = true;
+	mevent_is_active = false;
 
 	if (menustate->shadow_panel != NULL)
 	{
@@ -998,14 +1008,95 @@ st_menu_driver(ST_MENU_STATE *menustate, int c)
 	int		first_code = -1;
 	int		last_code = -1;
 	int		row = 1;
+	int		mouse_row = -1;
 	int		cursor_row = menustate->cursor_row;
 	bool	found_row = false;
 	int		search_code = -1;
 	bool	is_menubar = menustate->is_menubar;
+	ST_MENU_CONFIG	*config = menustate->config;
 
 	menustate->pressed_accelerator = false;
 
-	if (c != KEY_HOME && c != KEY_END && c != KEY_UP && c != KEY_DOWN)
+	if (c == KEY_MOUSE)
+	{
+		if (!mevent_is_active)
+		{
+			mevent_is_active = (getmouse(&mevent) == OK);
+		}
+
+		if (mevent_is_active)
+		{
+			if (mevent.bstate & BUTTON5_PRESSED)
+			{
+				c = KEY_DOWN;
+			}
+			else if (mevent.bstate & BUTTON4_PRESSED)
+			{
+				c = KEY_UP;
+			}
+			else if (mevent.bstate & BUTTON1_PRESSED)
+			{
+				if (is_menubar)
+				{
+					if (mevent.y == 0)
+					{
+						int		i = 0;
+						int		offset;
+
+						offset = (config->text_space != -1) ? (config->text_space / 2) : 1;
+
+						menu = menustate->menu;
+						while (menu->text != NULL)
+						{
+							int		minx, maxx;
+
+							if (i == 0)
+								minx = 0;
+							else
+								minx = menustate->bar_fields_x_pos[i] - offset;
+
+							maxx = menustate->bar_fields_x_pos[i + 1] - offset;
+
+							if (mevent.x >= minx && mevent.x < maxx)
+							{
+								search_code = menu->code;
+								break;
+							}
+
+							menu += 1;
+							i = i + 1;
+						}
+						mevent_is_active = false;
+					}
+					else
+					{
+						if (menustate->active_submenu != NULL)
+						{
+							if (!wenclose(menustate->active_submenu->draw_area, mevent.y, mevent.x))
+							{
+								st_menu_unpost(menustate->active_submenu);
+								menustate->active_submenu = NULL;
+								mevent_is_active = false;
+							}
+						}
+					}
+				}
+				else
+				{
+					int		row, col;
+
+					row = mevent.y;
+					col = mevent.x;
+
+					if (wmouse_trafo(menustate->draw_area, &row, &col, false))
+						mouse_row = row ;
+					mevent_is_active = false;
+				}
+			}
+		}
+	}
+
+	if (c != KEY_HOME && c != KEY_END && c != KEY_UP && c != KEY_DOWN && c != KEY_MOUSE)
 	{
 		/* ToDo to_fold(int) */
 		int		accelerator = menustate->config->force8bit ? tolower(c) : c;
@@ -1018,12 +1109,13 @@ st_menu_driver(ST_MENU_STATE *menustate, int c)
 				if (menustate->accelerators[i].c == accelerator)
 				{
 					search_code = menustate->accelerators[i].code;
-					//break;
+					break;
 				}
 			}
 		}
 	}
 
+	menu = menustate->menu;
 	while (menu->text != 0)
 	{
 		if (*menu->text != '\0' && strncmp(menu->text, "--", 2) != 0)
@@ -1040,6 +1132,14 @@ st_menu_driver(ST_MENU_STATE *menustate, int c)
 					found_row = true;
 					break;
 				}
+			}
+
+			if (row == mouse_row && mouse_row != -1)
+			{
+				menustate->cursor_row = row;
+				menustate->cursor_code = menu->code;
+				found_row = true;
+				break;
 			}
 
 			if (row > cursor_row && c == KEY_RIGHT && is_menubar)
@@ -1132,7 +1232,10 @@ st_menu_driver(ST_MENU_STATE *menustate, int c)
 			visible_submenu = true;
 		}
 		if (menustate->active_submenu != NULL)
+		{
+			if (c != KEY_MOUSE || (c == KEY_MOUSE && mevent_is_active))
 			st_menu_driver(menustate->active_submenu, c);
+		}
 		else if (menustate->pressed_accelerator || c == KEY_DOWN || c == 10 || visible_submenu)
 		{
 			menustate->active_submenu = menustate->submenu_states[menustate->cursor_row - 1];
@@ -1194,9 +1297,15 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 		aux_menu += 1;
 	}
 
-	menustate->bar_fields_x_pos = malloc(sizeof(int) * menu_fields);
+	/*
+	 * last bar position is hypotetical - we should not to calculate length of last field
+	 * every time.
+	 */
+	menustate->bar_fields_x_pos = malloc(sizeof(int) * (menu_fields + 1));
 	menustate->submenu_states = malloc(sizeof(ST_MENU_STATE) * menu_fields);
 	menustate->accelerators = malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
+
+	menustate->nitems = menu_fields;
 
 	if (config->text_space == -1)
 	{
@@ -1249,6 +1358,11 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 		i += 1;
 	}
 
+	/*
+	 * store hypotetical x bar position
+	 */
+	menustate->bar_fields_x_pos[i] = current_pos;
+
 	return menustate;
 }
 
@@ -1261,6 +1375,8 @@ main()
 	ST_MENU_CONFIG config;
 	ST_MENU_STATE *menustate;
 	int		c;
+	mmask_t		prev_mousemask = 0;
+
 
 	ST_MENU _left[] = {
 		{"Seznam souborů", 1, NULL},
@@ -1354,7 +1470,18 @@ main()
 
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
-	st_menu_load_style(&config, 2, 2);
+	st_menu_load_style(&config, 1, 2);
+
+#if NCURSES_MOUSE_VERSION > 1
+
+	mousemask(BUTTON1_PRESSED | BUTTON4_PRESSED | BUTTON5_PRESSED, NULL);
+
+#else
+
+	mousemask(BUTTON1_PRESSED, NULL);
+
+#endif
+
 
 	getmaxyx(stdscr, maxy, maxx);
 
@@ -1371,7 +1498,11 @@ main()
 
 	doupdate();
 
+mouseinterval(0);
+
+
 	c = getch();
+	mevent_is_active = false;
 	while (c != 'q')
 	{
 
@@ -1387,6 +1518,7 @@ main()
 		doupdate();
 
 		c = getch();
+		mevent_is_active = false;
 	}
 
 	endwin();
