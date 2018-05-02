@@ -89,6 +89,7 @@ typedef struct _ST_MENU_STATE
 ST_MENU_STATE *st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title);
 void st_menu_post(ST_MENU_STATE *menustate);
 
+WINDOW *mainwin;
 
 static void
 st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
@@ -169,8 +170,8 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
 			config->menu_shadow_cpn = start_from_cpn;
-			config->menu_shadow_attr = 0;
-			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+			config->menu_shadow_attr = A_REVERSE;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = 0;
@@ -630,9 +631,27 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 	ST_MENU_CONFIG	*config = menustate->config;
 	WINDOW	   *draw_area = menustate->draw_area;
 
-	getmaxyx(draw_area, maxy, maxx);
+	if (menustate->shadow_window != NULL)
+	{
+		int		smaxy, smaxx;
+		int		i;
 
-	werase(draw_area);
+		getmaxyx(menustate->shadow_window, smaxy, smaxx);
+
+		overwrite(mainwin, menustate->shadow_window);
+
+		for (i = 0; i <= smaxy; i++)
+			mvwchgat(menustate->shadow_window, i, 0, smaxx,
+							config->menu_shadow_attr,
+							config->menu_shadow_cpn,
+							NULL);
+
+		wnoutrefresh(menustate->shadow_window);
+	}
+
+	werase(menustate->window);
+
+	getmaxyx(draw_area, maxy, maxx);
 
 	if (draw_box)
 		box(draw_area, 0, 0);
@@ -736,7 +755,7 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 		row += 1;
 	}
 
-	wrefresh(draw_area);
+	wnoutrefresh(menustate->window);
 }
 
 static void
@@ -817,7 +836,7 @@ MenubarDraw(ST_MENU_STATE *menustate)
 		i += 1;
 	}
 
-	wrefresh(menustate->window);
+	wnoutrefresh(menustate->window);
 }
 
 ST_MENU_STATE *
@@ -891,8 +910,10 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 	{
 		menustate->shadow_window = newwin(rows, cols, begin_y + 1, begin_x + config->shadow_width);
 		menustate->shadow_panel = new_panel(menustate->shadow_window);
-
+		hide_panel(menustate->shadow_panel);
 		wbkgd(menustate->shadow_window, COLOR_PAIR(config->menu_shadow_cpn) | config->menu_shadow_attr);
+
+		wnoutrefresh(menustate->shadow_window);
 	}
 	else
 	{
@@ -901,9 +922,9 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 	}
 
 	menustate->window = newwin(rows, cols, begin_y, begin_x);
-	menustate->panel = new_panel(menustate->window);
 
 	wbkgd(menustate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
+	wnoutrefresh(menustate->window);
 
 	/* draw area can be same like window or smaller */
 	if (config->wide_vborders || config->wide_hborders)
@@ -914,10 +935,14 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 			config->wide_hborders ? 1 : 0,
 			config->wide_vborders ? 1 : 0);
 
-		wbkgd(menustate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
+		wbkgd(menustate->draw_area, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
+
+		wnoutrefresh(menustate->draw_area);
 	}
 	else
 		menustate->draw_area = menustate->window;
+
+	menustate->panel = new_panel(menustate->window);
 
 	hide_panel(menustate->panel);
 	if (menustate->shadow_panel != NULL)
@@ -932,7 +957,10 @@ st_menu_post(ST_MENU_STATE *menustate)
 	menustate->is_visible = true;
 
 	if (menustate->shadow_panel != NULL)
+	{
 		show_panel(menustate->shadow_panel);
+		top_panel(menustate->shadow_panel);
+	}
 
 	show_panel(menustate->panel);
 	top_panel(menustate->panel);
@@ -1149,6 +1177,9 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 
 	menustate->is_menubar = true;
 
+	wnoutrefresh(menustate->window);
+
+
 	wbkgd(menustate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
 
 	aux_menu = menu;
@@ -1226,7 +1257,6 @@ int
 main()
 {
 	int		maxx, maxy;
-	WINDOW *mainwin;
 	PANEL *mainpanel;
 	ST_MENU_CONFIG config;
 	ST_MENU_STATE *menustate;
@@ -1324,7 +1354,7 @@ main()
 
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
-	st_menu_load_style(&config, 10, 2);
+	st_menu_load_style(&config, 2, 2);
 
 	getmaxyx(stdscr, maxy, maxx);
 
