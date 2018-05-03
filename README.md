@@ -8,5 +8,5 @@ for CUA applications, and cannot be used for these types of applications.
 
 # demo
 
-    gcc demo2.c unicode.c   -lncursesw -ltinfo -Wall -lmenuw -lform -lpanel
+    gcc demo-st-menu.c unicode.c   -lncursesw -ltinfo -Wall -lmenuw -lform -lpanel
 
