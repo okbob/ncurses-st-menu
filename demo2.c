@@ -31,8 +31,8 @@ typedef struct
 	int		shadow_width;			/* when shadow_width is higher than zero, shadow is visible */
 	int		menu_background_cpn;	/* draw area color pair number */
 	int		menu_background_attr;	/* draw area attributte */
-	int		menu_shadow_cpn;	/* draw area color pair number */
-	int		menu_shadow_attr;	/* draw area attributte */
+	int		menu_shadow_cpn;		/* draw area color pair number */
+	int		menu_shadow_attr;		/* draw area attributte */
 	int		accelerator_cpn;		/* color pair of accelerators */
 	int		accelerator_attr;		/* accelerator attributes */
 	int		cursor_cpn;				/* cursor color pair */
@@ -46,6 +46,7 @@ typedef struct
 	int		init_text_space;		/* initial space for menu bar */
 	int		menu_bar_menu_offset;	/* offset between menu bar and menu */
 	int		inner_space;			/* space between draw area and border, FAND uses 2 spaces */
+	int		extern_accel_text_space;	/* space between external accelerator and menu item text */
 } ST_MENU_CONFIG;
 
 #define ST_MENU_STYLE_MCB			0
@@ -74,6 +75,7 @@ typedef struct _ST_MENU_STATE
 	int			naccelerators;
 	ST_MENU_CONFIG *config;
 	int			help_x_pos;
+	int			item_x_pos;
 	int			nitems;									/* number of menu items */
 	int		   *bar_fields_x_pos;						/* array of x positions of menubar fields */
 	char	   *title;
@@ -508,6 +510,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 	}
 
 	config->draw_box = true;
+	config->extern_accel_text_space = 2;
 }
 
 static int
@@ -521,29 +524,42 @@ max_int(int a, int b)
  * ~~ is used as ~.
  */
 static int
-MenuTextDisplayWidth(ST_MENU_CONFIG *config, char *text, char **accelerator)
+MenuTextDisplayWidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bool *extern_accel)
 {
 	int		result = 0;
+	bool	first_char = true;
 
 	if (accelerator != NULL)
 		*accelerator = NULL;
 
+	*extern_accel = false;
+
 	while (*text != '\0')
 	{
-		if (*text == '~')
+		if (*text == '~' || (*text == '_' && first_char))
 		{
-			if (text[1] == '~')
+			if (text[1] == *text)
 			{
 				result += 1;
 				text += 2;
 			}
 			else
 			{
+				if (*text == '_')
+				{
+					*extern_accel = true;
+				}
+
 				text += 1;
 				if (accelerator != NULL && *accelerator == NULL)
 					*accelerator = text;
+
+				/* eat pair '_' */
+				if (*extern_accel)
+					text += 1;
 			}
 
+			first_char = false;
 			continue;
 		}
 
@@ -557,16 +573,19 @@ MenuTextDisplayWidth(ST_MENU_CONFIG *config, char *text, char **accelerator)
 			result += utf_dsplen(text);
 			text += utf8charlen(*text);
 		}
+
+		first_char = false;
 	}
 
 	return result;
 }
 
 static void
-PullDownMenuContentSize(ST_MENU_CONFIG *config, ST_MENU *menu, int *rows, int *columns, int *help_x_pos,
+PullDownMenuContentSize(ST_MENU_CONFIG *config, ST_MENU *menu, int *rows, int *columns, int *help_x_pos, int *item_x_pos,
 						ST_MENU_ACCELERATOR *accelerators, int *naccelerators, int *first_row, int *first_code)
 {
 	char	*accelerator;
+	bool	has_extern_accel = false;
 	int	max_text_width = 0;
 	int max_help_width = 0;
 	int		naccel = 0;
@@ -581,6 +600,8 @@ PullDownMenuContentSize(ST_MENU_CONFIG *config, ST_MENU *menu, int *rows, int *c
 
 	while (menu->text != NULL)
 	{
+		bool	extern_accel;
+
 		*rows += 1;
 		if (*menu->text && strncmp(menu->text, "--", 2) != 0)
 		{
@@ -592,7 +613,10 @@ PullDownMenuContentSize(ST_MENU_CONFIG *config, ST_MENU *menu, int *rows, int *c
 			if (*first_code == -1)
 				*first_code = menu->code;
 
-			text_width = MenuTextDisplayWidth(config, menu->text, &accelerator);
+			text_width = MenuTextDisplayWidth(config, menu->text, &accelerator, &extern_accel);
+
+			if (extern_accel)
+				has_extern_accel = true;
 
 			if (accelerator != NULL)
 			{
@@ -627,6 +651,16 @@ PullDownMenuContentSize(ST_MENU_CONFIG *config, ST_MENU *menu, int *rows, int *c
 		*help_x_pos = -1;
 
 	*naccelerators = naccel;
+
+	if (has_extern_accel)
+	{
+		*columns += config->extern_accel_text_space + 1;
+		if (*help_x_pos != -1)
+			*help_x_pos += config->extern_accel_text_space + 1;
+		*item_x_pos = config->extern_accel_text_space + 1;
+	}
+	else
+		*item_x_pos = 1;
 }
 
 static void
@@ -682,7 +716,7 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 			else
 				wmove(draw_area, row - 1, 0);
 
-			for(i = 0; i < maxx - 1 - (draw_box ? 1 : 0); i++)
+			for(i = 0; i < maxx - 1 - (draw_box ? 1 : -1); i++)
 				waddch(draw_area, ACS_HLINE);
 
 			if (draw_box)
@@ -693,6 +727,8 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 			char	*text = menu->text;
 			bool	highlight = false;
 			bool	is_cursor_row = menustate->cursor_row == row;
+			bool	first_char = true;
+			bool	is_extern_accel;
 
 			if (is_cursor_row)
 			{
@@ -701,16 +737,24 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 				wattron(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 			}
 
-			wmove(draw_area, row - (draw_box ? 0 : 1), text_min_x + 1);
+			is_extern_accel = (*text == '_' && text[1] != '_');
+
+			if (menustate->item_x_pos != 1 && !is_extern_accel)
+			{
+				wmove(draw_area, row - (draw_box ? 0 : 1), text_min_x + 1 + menustate->item_x_pos);
+			}
+			else
+				wmove(draw_area, row - (draw_box ? 0 : 1), text_min_x + 1);
 
 			while (*text)
 			{
-				if (*text == '~')
+				if (*text == '~' || (*text == '_' && (first_char || highlight)))
 				{
-					if (text[1] == '~')
+					if (text[1] == *text)
 					{
-						waddstr(draw_area, "~");
+						waddnstr(draw_area, text, 1);
 						text += 2;
+						first_char = false;
 						continue;
 					}
 
@@ -727,6 +771,14 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
 						if (is_cursor_row)
 							wattron(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+
+						if (is_extern_accel)
+						{
+							int		y, x;
+
+							getyx(draw_area, y, x);
+							wmove(draw_area, y, x + config->extern_accel_text_space);
+						}
 					}
 
 					highlight = !highlight;
@@ -739,6 +791,8 @@ PullDownMenuDraw(ST_MENU_STATE *menustate)
 					waddnstr(draw_area, text, chlen);
 					text += chlen;
 				}
+
+				first_char = false;
 			}
 
 			if (menu->help != NULL)
@@ -900,7 +954,8 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 		i += 1;
 	}
 
-	PullDownMenuContentSize(config, menu, &rows, &cols, &menustate->help_x_pos,
+	PullDownMenuContentSize(config, menu, &rows, &cols,
+							&menustate->help_x_pos, &menustate->item_x_pos,
 							menustate->accelerators, &menustate->naccelerators,
 							&menustate->cursor_row, &menustate->cursor_code);
 
@@ -989,8 +1044,13 @@ st_menu_post(ST_MENU_STATE *menustate)
 void
 st_menu_unpost(ST_MENU_STATE *menustate)
 {
-	menustate->is_visible = false;
+	if (menustate->active_submenu != NULL)
+	{
+		st_menu_unpost(menustate->active_submenu);
+		menustate->active_submenu = NULL;
+	}
 
+	menustate->is_visible = false;
 	hide_panel(menustate->panel);
 	if (menustate->shadow_panel != NULL)
 		hide_panel(menustate->shadow_panel);
@@ -1089,7 +1149,8 @@ st_menu_driver(ST_MENU_STATE *menustate, int c)
 					col = mevent.x;
 
 					if (wmouse_trafo(menustate->draw_area, &row, &col, false))
-						mouse_row = row ;
+						mouse_row = row + 1
+						  - (config->draw_box ? 1:0);
 					mevent_is_active = false;
 				}
 			}
@@ -1289,10 +1350,12 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	menu_fields = 0;
 	while (aux_menu->text != NULL)
 	{
+		bool	fake_extern_accel;
+
 		menu_fields += 1;
 
 		if (config->text_space == -1)
-			aux_width += MenuTextDisplayWidth(config, aux_menu->text, NULL);
+			aux_width += MenuTextDisplayWidth(config, aux_menu->text, NULL, &fake_extern_accel);
 
 		aux_menu += 1;
 	}
@@ -1328,9 +1391,10 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	while (aux_menu->text != NULL)
 	{
 		char	*accelerator;
+		bool	_extern_accel;
 
 		menustate->bar_fields_x_pos[i] = current_pos;
-		current_pos += MenuTextDisplayWidth(config, aux_menu->text, &accelerator);
+		current_pos += MenuTextDisplayWidth(config, aux_menu->text, &accelerator, &_extern_accel);
 		current_pos += text_space;
 		if (aux_menu->submenu != NULL)
 		{
@@ -1445,6 +1509,7 @@ main()
 		{"Upravit akc~e~ k příponám", 49, NULL},
 		{"Upravit uživatelské menu", 50, NULL},
 		{"Úprava souboru z~v~ýrazňovaných skupin", 51, NULL},
+		{"_@_Do something on current file", 52, NULL},
 		{NULL, -1, NULL}
 	};
 
@@ -1470,7 +1535,7 @@ main()
 
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
-	st_menu_load_style(&config, 1, 2);
+	st_menu_load_style(&config, 3, 2);
 
 #if NCURSES_MOUSE_VERSION > 1
 
