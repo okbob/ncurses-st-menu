@@ -68,6 +68,13 @@ typedef struct
 #define ST_MENU_STYLE_TURBO			10
 #define ST_MENU_STYLE_PDMENU		11
 
+/*
+ * Somewhere SIZE_MAX should not be defined
+ */
+#ifndef SIZE_MAX
+#define SIZE_MAX ((size_t)-1)
+#endif
+
 typedef struct _ST_MENU_STATE
 {
 	ST_MENU	   *menu;
@@ -628,6 +635,9 @@ st_menu_driver(ST_MENU_STATE *menustate, int c, MEVENT *mevent)
 
 	if (c == KEY_MOUSE)
 	{
+
+#if NCURSES_MOUSE_VERSION > 1
+
 		if (mevent->bstate & BUTTON5_PRESSED)
 		{
 				c = KEY_DOWN;
@@ -636,7 +646,11 @@ st_menu_driver(ST_MENU_STATE *menustate, int c, MEVENT *mevent)
 		{
 			c = KEY_UP;
 		}
-		else if (mevent->bstate & BUTTON1_PRESSED)
+		else
+
+#endif
+
+		if (mevent->bstate & BUTTON1_PRESSED)
 		{
 			if (is_menubar)
 			{
@@ -1711,7 +1725,7 @@ main()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
-	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2);
+	st_menu_load_style(&config, 11, 2);
 
 #if NCURSES_MOUSE_VERSION > 1
 
