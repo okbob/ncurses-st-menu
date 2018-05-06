@@ -8,7 +8,7 @@ for CUA applications, and cannot be used for these types of applications.
 
 # demo
 
-    gcc demo-st-menu.c -Wall -lncursesw -lmenuw -lpanel -lunistring -DNCURSES_WIDECHAR=1
+    gcc demo-st-menu.c -Wall -lncursesw -lpanel -lunistring -DNCURSES_WIDECHAR=1
 
 #dependency
 
