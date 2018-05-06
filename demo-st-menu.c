@@ -1749,8 +1749,13 @@ main()
 	int		c;
 	MEVENT	mevent;
 	int		i;
+
+#if NCURSES_WIDECHAR > 0
+
 	int		ret;
 	wint_t	ch;
+
+#endif
 
 	const char *demo = 
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore "
@@ -1907,7 +1912,7 @@ main()
  * ncurses divides multibyte chars to separate events when a function
  * getch is used.
  */
-#ifdef NCURSES_WIDECHAR
+#if NCURSES_WIDECHAR > 0
 
 	ret = get_wch(&ch);
 	c = ch;
@@ -1943,7 +1948,7 @@ main()
 
 		/* get new event */
 
-#ifdef NCURSES_WIDECHAR
+#if NCURSES_WIDECHAR > 0
 
 		ret = get_wch(&ch);
 
