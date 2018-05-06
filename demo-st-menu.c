@@ -1,10 +1,16 @@
-#include <string.h>
-#include <curses.h>
-#include <panel.h>
-#include <locale.h>
-#include "unicode.h"
-#include <stdlib.h>
 #include <ctype.h>
+#include <langinfo.h>
+#include <locale.h>
+#include <ncurses.h>
+#include <panel.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+
+/* libunistring */
+#include <unicase.h>
+#include <unistr.h>
+#include <uniwidth.h>
 
 /*
  * This window is main application window. It is used for taking content
@@ -22,13 +28,16 @@ typedef struct _ST_MENU
 
 typedef struct
 {
-	int		c;
+	char	*c;
+	int		length;
 	int		code;
 } ST_MENU_ACCELERATOR;
 
 typedef struct
 {
 	bool	force8bit;
+	char   *encoding;
+	const char   *language;
 	bool	wide_vborders;			/* wide vertical menu borders like Turbo Vision */
 	bool	wide_hborders;			/* wide horizontal menu borders like custom menu mc */
 	bool	draw_box;				/* when true, then box is created */
@@ -87,7 +96,7 @@ typedef struct _ST_MENU_STATE
 	ST_MENU_ACCELERATOR		*accelerators;
 	int			naccelerators;
 	ST_MENU_CONFIG *config;
-	int			help_x_pos;
+	int			shortcut_x_pos;
 	int			item_x_pos;
 	int			nitems;									/* number of menu items */
 	int		   *bar_fields_x_pos;						/* array of x positions of menubar fields */
@@ -104,9 +113,14 @@ static ST_MENU	   *selected_item = NULL;
 static bool			press_accelerator = false;
 static bool			press_mouse = false;
 
+static inline int char_length(ST_MENU_CONFIG *config, const char *c);
+static inline int char_width(ST_MENU_CONFIG *config, char *c, int bytes);
+static inline int str_width(ST_MENU_CONFIG *config, char *str);
+static inline char *chr_casexfrm(ST_MENU_CONFIG *config, char *str);
+
 static int menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bool *extern_accel);
 static void pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
-										int *rows, int *columns, int *help_x_pos, int *item_x_pos,
+										int *rows, int *columns, int *shortcut_x_pos, int *item_x_pos,
 										ST_MENU_ACCELERATOR *accelerators, int *naccelerators,
 																			int *first_row, int *first_code);
 
@@ -128,10 +142,119 @@ ST_MENU_STATE *st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu);
 /*
  * Generic functions
  */
-static int
+static inline int
 max_int(int a, int b)
 {
 	return a > b ? a : b;
+}
+
+static inline int
+min_int(int a, int b)
+{
+	return a < b ? a : b;
+}
+
+/*
+ * Returns bytes of multibyte char
+ */
+static inline int
+char_length(ST_MENU_CONFIG *config, const char *c)
+{
+	int		result;
+
+	if (!config->force8bit)
+	{
+		/*
+		 * I would not to check validity of UTF8 char. So I pass
+		 * 4 as n (max possible size of UTF8 char in bytes). When
+		 * in this case, u8_mblen should to return possitive number,
+		 * but be sure, and return 1 everytime.
+		 *
+		 * This functionality can be enhanced to check real size
+		 * of utf8 string.
+		 */
+		result = u8_mblen((const uint8_t *) c, 4);
+		if (result > 0)
+			return result;
+	}
+
+	return 1;
+}
+
+/*
+ * Retuns display width of char
+ */
+static inline int
+char_width(ST_MENU_CONFIG *config, char *c, int bytes)
+{
+	if (!config->force8bit)
+		return u8_width((const uint8_t *) c, 1, config->encoding);
+
+	return 1;
+}
+
+/*
+ * returns display width of string
+ */
+static inline int
+str_width(ST_MENU_CONFIG *config, char *str)
+{
+	if (!config->force8bit)
+		return u8_strwidth((const uint8_t *) str, config->encoding);
+
+	return strlen(str);
+}
+
+/*
+ * Transform string to simply compareable case insensitive string
+ */
+static inline char *
+chr_casexfrm(ST_MENU_CONFIG *config, char *str)
+{
+	char	buffer[20];
+	char   *result;
+	size_t	length;
+
+	if (!config->force8bit)
+	{
+		length = sizeof(buffer);
+		result = u8_casexfrm((const uint8_t *) str,
+								char_length(config, str),
+									config->language, NULL,
+									buffer, &length);
+		if (result == buffer)
+			result = strdup(buffer);
+	}
+	else
+	{
+		buffer[0] = tolower(str[0]);
+		buffer[1] = '\0';
+
+		result = strdup(buffer);
+	}
+
+	return result;
+}
+
+/*
+ * Convert wide char to multibyte encoding
+ */
+static inline int
+wchar_to_utf8(ST_MENU_CONFIG *config, char *str, int n, wchar_t wch)
+{
+	int		result;
+
+	if (!config->force8bit)
+	{
+		result = u8_uctomb((uint8_t *) str, (ucs4_t) wch, n);
+	}
+	else
+	{
+		*str = (char) wch;
+		result = 1;
+	}
+
+	return result;
 }
 
 /*
@@ -145,6 +268,7 @@ menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bo
 	bool	_extern_accel = false;
 	char   *_accelerator = NULL;
 	bool	first_char = true;
+	int		bytes;
 
 	while (*text != '\0')
 	{
@@ -179,16 +303,9 @@ menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bo
 			continue;
 		}
 
-		if (config->force8bit)
-		{
-			result += 1;
-			text += 1;
-		}
-		else
-		{
-			result += utf_dsplen(text);
-			text += utf8charlen(*text);
-		}
+		bytes = char_length(config, text);
+		result += char_width(config, text, bytes);
+		text += bytes;
 
 		first_char = false;
 	}
@@ -206,19 +323,19 @@ menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bo
  */
 static void
 pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
-								int *rows, int *columns, int *help_x_pos, int *item_x_pos,
+								int *rows, int *columns, int *shortcut_x_pos, int *item_x_pos,
 								ST_MENU_ACCELERATOR *accelerators, int *naccelerators,
 								int *first_row, int *first_code)
 {
 	char	*accelerator;
 	bool	has_extern_accel = false;
 	int	max_text_width = 0;
-	int max_help_width = 0;
+	int max_shortcut_width = 0;
 	int		naccel = 0;
 
 	*rows = 0;
 	*columns = 0;
-	*help_x_pos = 0;
+	*shortcut_x_pos = 0;
 	*first_row = -1;
 	*first_code = -1;
 
@@ -232,7 +349,7 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 		if (*menu->text && strncmp(menu->text, "--", 2) != 0)
 		{
 			int text_width = 0;
-			int help_width = 0;
+			int shortcut_width = 0;
 
 			if (*first_row == -1)
 				*first_row = *rows;
@@ -246,15 +363,13 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 
 			if (accelerator != NULL)
 			{
-				accelerators[naccel].c = 
-					config->force8bit ? tolower(*accelerator) : utf8_tofold(accelerator);
+				accelerators[naccel].c = chr_casexfrm(config, accelerator);
+				accelerators[naccel].length = strlen(accelerators[naccel].c);
 				accelerators[naccel++].code = menu->code;
 			}
 
 			if (menu->shortcut)
-			{
-				help_width = config->force8bit ? strlen(menu->shortcut) : utf_string_dsplen(menu->shortcut, SIZE_MAX);
-			}
+				shortcut_width = str_width(config, menu->shortcut);
 
 			/*
 			 * left alligned shortcuts are used by MC style
@@ -262,13 +377,13 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 			if (config->left_alligned_shortcuts)
 			{
 				max_text_width = max_int(max_text_width, 1 + text_width + 2);
-				max_help_width = max_int(max_help_width, help_width);
+				max_shortcut_width = max_int(max_shortcut_width, shortcut_width);
 			}
 			else
 				*columns = max_int(*columns,
 											1 + text_width + 1
 											  + (config->extra_inner_space ? 2 : 0)
-											  + (help_width > 0 ? help_width + 4 : 0));
+											  + (shortcut_width > 0 ? shortcut_width + 4 : 0));
 		}
 
 		menu += 1;
@@ -276,11 +391,11 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 
 	if (config->left_alligned_shortcuts)
 	{
-		*columns = max_text_width + (max_help_width > 0 ? max_help_width + 1 : 0);
-		*help_x_pos = max_text_width;
+		*columns = max_text_width + (max_shortcut_width > 0 ? max_shortcut_width + 1 : 0);
+		*shortcut_x_pos = max_text_width;
 	}
 	else
-		*help_x_pos = -1;
+		*shortcut_x_pos = -1;
 
 	*naccelerators = naccel;
 
@@ -290,8 +405,8 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 	if (has_extern_accel)
 	{
 		*columns += config->extern_accel_text_space + 1;
-		if (*help_x_pos != -1)
-			*help_x_pos += config->extern_accel_text_space + 1;
+		if (*shortcut_x_pos != -1)
+			*shortcut_x_pos += config->extern_accel_text_space + 1;
 		*item_x_pos = config->extern_accel_text_space + 1;
 	}
 	else
@@ -364,7 +479,7 @@ menubar_draw(ST_MENU_STATE *menustate)
 			}
 			else
 			{
-				int chlen = menustate->config->force8bit ? 1 : utf8charlen(*text);
+				int chlen = char_length(config, text);
 
 				waddnstr(menustate->window, text, chlen);
 				text += chlen;
@@ -514,7 +629,7 @@ pulldownmenu_draw(ST_MENU_STATE *menustate)
 				}
 				else
 				{
-					int chlen = menustate->config->force8bit ? 1 : utf8charlen(*text);
+					int chlen = char_length(config, text);
 
 					waddnstr(draw_area, text, chlen);
 					text += chlen;
@@ -525,16 +640,17 @@ pulldownmenu_draw(ST_MENU_STATE *menustate)
 
 			if (menu->shortcut != NULL)
 			{
-				if (menustate->help_x_pos != -1)
+				if (menustate->shortcut_x_pos != -1)
 				{
-					wmove(draw_area, row - (draw_box ? 0 : 1), menustate->help_x_pos + (draw_box ? 1 : 0));
+					wmove(draw_area, row - (draw_box ? 0 : 1), menustate->shortcut_x_pos + (draw_box ? 1 : 0));
 				}
 				else
 				{
-					int dspl = menustate->config->force8bit ? strlen(menu->shortcut) : utf_string_dsplen(menu->shortcut, SIZE_MAX);
+					int dspl = str_width(config, menu->shortcut);
 
 					wmove(draw_area, row - (draw_box ? 0 : 1), text_max_x - dspl - 1);
 				}
+
 				waddstr(draw_area, menu->shortcut);
 			}
 
@@ -724,17 +840,28 @@ st_menu_driver(ST_MENU_STATE *menustate, int c, MEVENT *mevent)
 			c != KEY_HOME && c != KEY_END && c != KEY_UP && c != KEY_DOWN && c != KEY_MOUSE)
 	{
 		/* ToDo to_fold(int) */
-		int		accelerator = menustate->config->force8bit ? tolower(c) : c;
+		char	buffer[20];
+		char   *pressed;
+		int		l_pressed;
 		int		i;
+
+		l_pressed = wchar_to_utf8(config, buffer, 20, (wchar_t) c);
+		buffer[l_pressed] = '\0';
+
+		pressed = chr_casexfrm(config, (char *) buffer);
+		l_pressed = strlen(pressed);
 
 		for (i = 0; i < menustate->naccelerators; i++)
 		{
-			if (menustate->accelerators[i].c == accelerator)
+			if (menustate->accelerators[i].length == l_pressed &&
+				memcmp(menustate->accelerators[i].c, pressed, l_pressed) == 0)
 			{
 				search_code = menustate->accelerators[i].code;
 				break;
 			}
 		}
+
+		free(pressed);
 	}
 
 	/*
@@ -980,7 +1107,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 
 	/* get pull down menu dimensions */
 	pulldownmenu_content_size(config, menu, &rows, &cols,
-							&menustate->help_x_pos, &menustate->item_x_pos,
+							&menustate->shortcut_x_pos, &menustate->item_x_pos,
 							menustate->accelerators, &menustate->naccelerators,
 							&menustate->cursor_row, &menustate->cursor_code);
 
@@ -1142,8 +1269,8 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 
 		if (accelerator)
 		{
-			menustate->accelerators[naccel].c = 
-				config->force8bit ? tolower(*accelerator) : utf8_tofold(accelerator);
+			menustate->accelerators[naccel].c = chr_casexfrm(config, accelerator);
+			menustate->accelerators[naccel].length = strlen(menustate->accelerators[naccel].c);
 			menustate->accelerators[naccel++].code = aux_menu->code;
 		}
 
@@ -1622,6 +1749,8 @@ main()
 	int		c;
 	MEVENT	mevent;
 	int		i;
+	int		ret;
+	wint_t	ch;
 
 	const char *demo = 
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore "
@@ -1631,7 +1760,7 @@ main()
 			"deserunt mollit anim id est laborum.";
 
 	ST_MENU _left[] = {
-		{"File listin~g~", 1, NULL},
+		{"ša~č~File listing", 1, NULL},
 		{"~Q~uick view", 2, "C-x q"},
 		{"~I~nfo", 3, "C-x i"},
 		{"~T~ree", 4, NULL},
@@ -1708,9 +1837,12 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	config.force8bit = false;
-
 	setlocale(LC_ALL, "");
+
+	/* Don't use UTF when terminal doesn't use UTF */
+	config.encoding = nl_langinfo(CODESET);
+	config.language = uc_locale_language();
+	config.force8bit = strcmp(config.encoding, "UTF-8") != 0;
 
 	initscr();
 	start_color();
@@ -1752,6 +1884,10 @@ main()
 
 	wrefresh(mainwin);
 
+	/*
+	 * main window should be panelized. Only panels can be
+	 * overlapped without unwanted effects.
+	 */
 	mainpanel = new_panel(mainwin);
 
 	/* be compiler quiet */
@@ -1765,7 +1901,25 @@ main()
 
 	doupdate();
 
-	c = getch(); if (c == KEY_MOUSE) getmouse(&mevent);
+/*
+ * Use wide char function when it is available. Then shortcuts
+ * can be any wide char, else shortcut can be only 8bit char.
+ * ncurses divides multibyte chars to separate events when a function
+ * getch is used.
+ */
+#ifdef NCURSES_WIDECHAR
+
+	ret = get_wch(&ch);
+	c = ch;
+
+#else
+
+	c = getch();
+
+#endif
+
+	if (c == KEY_MOUSE)
+		getmouse(&mevent);
 
 	while (c != 'q')
 	{
@@ -1788,7 +1942,28 @@ main()
 			break;
 
 		/* get new event */
-		c = getch(); if (c == KEY_MOUSE) getmouse(&mevent);
+
+#ifdef NCURSES_WIDECHAR
+
+		ret = get_wch(&ch);
+
+		/* be compiler quite */
+		(void) ret;
+		c = ch;
+
+#else
+
+		c = getch();
+
+#endif
+
+		/*
+		 * Read mouse event when it is possible. Do it now, before st_meny_driver call,
+		 * as protection to unwanted multiple call of getmouse function. For one mouse
+		 * event, it returns data only once time.
+		 */
+		if (c == KEY_MOUSE)
+			getmouse(&mevent);
 	}
 
 	endwin();
