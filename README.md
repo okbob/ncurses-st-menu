@@ -26,11 +26,11 @@ for CUA applications, and cannot be used for these types of applications.
 
 # Screenshots
 
-![Screeshot](screenshots/scr1.png)
-![Screeshot](screenshots/scr2.png)
-![Screeshot](screenshots/scr4.png)
-![Screeshot](screenshots/scr6.png)
-![Screeshot](screenshots/scr8.png)
+![](screenshots/scr1.png)
+![](screenshots/scr2.png)
+![](screenshots/scr4.png)
+![](screenshots/scr6.png)
+![](screenshots/scr8.png)
 
 
 # Demo
