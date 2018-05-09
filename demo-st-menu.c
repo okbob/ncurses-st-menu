@@ -198,12 +198,12 @@ safe_malloc(size_t size)
 static inline int
 get_event(MEVENT *mevent, bool *alt)
 {
-	wint_t	ch;
 	bool	first_event = true;
 	int		c;
 
 #if NCURSES_WIDECHAR > 0
 
+	wint_t	ch;
 	int		ret;
 
 #endif
