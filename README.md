@@ -26,7 +26,7 @@ for CUA applications, and cannot be used for these types of applications.
 
 # Screenshots
 
-![Screeshot](screenshots/scr1.png)
+![Screeshot](screenshots/scr1.png | width=100)
 ![Screeshot](screenshots/scr2.png)
 ![Screeshot](screenshots/scr4.png)
 ![Screeshot](screenshots/scr6.png)
