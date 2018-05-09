@@ -24,6 +24,15 @@ for CUA applications, and cannot be used for these types of applications.
 
 * Possible serialize and load state of menu objects
 
+# Screenshots
+
+![Screeshot](screenshots/scr1.png)
+![Screeshot](screenshots/scr2.png)
+![Screeshot](screenshots/scr4.png)
+![Screeshot](screenshots/scr6.png)
+![Screeshot](screenshots/scr8.png)
+
+
 # Demo
 
     gcc demo-st-menu.c -Wall -lncursesw -lpanel -lunistring -DNCURSES_WIDECHAR=1
