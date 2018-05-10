@@ -13,7 +13,11 @@
 #include <unistr.h>
 #include <uniwidth.h>
 
+/* remove comment, when debug via named pipe should be active
+
 #define DEBUG_STREAM
+
+*/
 
 #ifdef DEBUG_STREAM
 
