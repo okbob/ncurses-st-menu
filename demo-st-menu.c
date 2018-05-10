@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 #include <langinfo.h>
 #include <locale.h>
 #include <ncurses.h>
@@ -11,6 +12,18 @@
 #include <unicase.h>
 #include <unistr.h>
 #include <uniwidth.h>
+
+#define DEBUG_STREAM
+
+#ifdef DEBUG_STREAM
+
+FILE *debug = NULL;
+int		debug_eventno = 0;
+
+/* change to your own path if you use it */
+#define		DEBUG_NAMED_PIPE	"/home/pavel/debug"
+
+#endif
 
 /*
  * This window is main application window. It is used for taking content
@@ -128,7 +141,7 @@ static inline int wchar_to_utf8(ST_MENU_CONFIG *config, char *str, int n, wchar_
 
 static inline int get_event(MEVENT *mevent, bool *alt);
 
-static bool _st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent, bool is_top, bool *unpost_submenu, bool is_nested_pulldown);
+static bool _st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent, bool is_top, bool is_nested_pulldown, bool *unpost_submenu);
 static void _st_menu_delete(ST_MENU_STATE *menustate);
 
 static int menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bool *extern_accel);
@@ -142,7 +155,7 @@ static void pulldownmenu_draw(ST_MENU_STATE *menustate, bool is_top);
 int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn);
 
 void st_menu_post(ST_MENU_STATE *menustate);
-void st_menu_unpost(ST_MENU_STATE *menustate);
+void st_menu_unpost(ST_MENU_STATE *menustate, bool close_active_submenu);
 bool st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent);
 void st_menu_delete(ST_MENU_STATE *menustate);
 void st_menu_save(ST_MENU_STATE *menustate, int *cursor_rows, int max_rows);
@@ -1015,16 +1028,19 @@ st_menu_post(ST_MENU_STATE *menustate)
 }
 
 /*
- * Hide menu
+ * Hide menu. When close_active_submenu is true, then the path
+ * of active submenu is destroyed - it doesn't rememeber opened
+ * submenus.
  */
 void
-st_menu_unpost(ST_MENU_STATE *menustate)
+st_menu_unpost(ST_MENU_STATE *menustate, bool close_active_submenu)
 {
 	/* hide active submenu */
 	if (menustate->active_submenu)
 	{
-		st_menu_unpost(menustate->active_submenu);
-		menustate->active_submenu = NULL;
+		st_menu_unpost(menustate->active_submenu, close_active_submenu);
+		if (close_active_submenu)
+			menustate->active_submenu = NULL;
 	}
 
 	hide_panel(menustate->panel);
@@ -1045,7 +1061,9 @@ st_menu_unpost(ST_MENU_STATE *menustate)
  * element tell to owner, close me.
  */
 static bool
-_st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent, bool is_top, bool *unpost_submenu, bool is_nested_pulldown)
+_st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent,
+					bool is_top, bool is_nested_pulldown,
+					bool *unpost_submenu)
 {
 	ST_MENU_CONFIG	*config = menustate->config;
 	int		cursor_row = menustate->cursor_row;		/* number of active menu item */
@@ -1065,29 +1083,46 @@ _st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent, bool 
 	press_accelerator = false;
 	press_mouse = false;
 
+	*unpost_submenu = false;
+
 	/*
 	 * Propagate event to nested active object first. When nested object would be
 	 * closed, close it. When nested object read event, go to end
 	 */
 	if (menustate->active_submenu)
 	{
+		bool	_is_nested_pulldown = is_nested_pulldown ? true : (is_menubar ? false : true);
 		bool	unpost_submenu = false;
+
+		/*
+		 * Key right is used in pulldown menu for access to nested menu.
+		 * When nested menu is active already, then there is not any
+		 * work on this level. KEY_RIGHT can buble to menubar and can
+		 * be processed there.
+		 */
+		if (!is_menubar && c == KEY_RIGHT)
+			goto draw_object;
 
 		/*
 		 * Submenu cannot be top object. When now is not menu bar, then now should be
 		 * pulldown menu, and nested object should be nested pulldown menu.
 		 */
 		processed = _st_menu_driver(menustate->active_submenu, c, alt, mevent,
-												false, &unpost_submenu, !is_menubar);
+												false, _is_nested_pulldown, &unpost_submenu);
 
 		if (unpost_submenu)
 		{
-			st_menu_unpost(menustate->active_submenu);
+			st_menu_unpost(menustate->active_submenu, false);
 			menustate->active_submenu = NULL;
 		}
 
-		if (processed)
+		/*
+		 * When we close some object, then we did some work on this
+		 * level, and we should not do more work here.
+		 */
+		if (processed || unpost_submenu)
 			goto draw_object;
+
 	}
 
 	/*
@@ -1351,7 +1386,7 @@ _st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent, bool 
 	/* when menubar is changed, unpost active pulldown submenu */
 	if (menustate->active_submenu && cursor_row != menustate->cursor_row)
 	{
-		st_menu_unpost(menustate->active_submenu);
+		st_menu_unpost(menustate->active_submenu, false);
 		menustate->active_submenu = NULL;
 
 		/* remember, submenu was visible */
@@ -1401,9 +1436,9 @@ draw_object:
 bool
 st_menu_driver(ST_MENU_STATE *menustate, int c, bool alt, MEVENT *mevent)
 {
-	bool aux_unpost_submenu;
+	bool aux_unpost_submenu = false;
 
-	return _st_menu_driver(menustate, c, alt, mevent, true, &aux_unpost_submenu, false);
+	return _st_menu_driver(menustate, c, alt, mevent, true, false, &aux_unpost_submenu);
 }
 
 /*
@@ -2296,6 +2331,17 @@ main()
 
 	setlocale(LC_ALL, "");
 
+#ifdef DEBUG_STREAM
+
+	debug = fopen(DEBUG_NAMED_PIPE, "w");
+	if (!debug)
+	{
+		fprintf(stderr, "Cannot open debug named pipe: %s\n", strerror(errno));
+		exit(1);
+	}
+
+#endif
+
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
 	config.language = uc_locale_language();
@@ -2364,12 +2410,19 @@ main()
 
 	c = get_event(&mevent, &alt);
 
+
 	refresh();
 
 	while (1)
 	{
-		bool	alt;
 		bool	processed;
+
+#ifdef DEBUG_STREAM
+
+	fprintf(debug, "eventno: %d, input event: %d, %lc, alt: %d\n",
+		++debug_eventno, c, c, alt);
+
+#endif
 
 		/* when submenu is not active, then enter activate submenu,
 		 * else end
@@ -2448,6 +2501,12 @@ process_code:
 				break;
 		}
 
+#ifdef DEBUG_STREAM
+
+		fflush(debug);
+
+#endif
+
 		if (c == 'q' && !press_accelerator)
 			break;
 
@@ -2456,6 +2515,15 @@ process_code:
 	}
 
 	endwin();
+
+#ifdef DEBUG_STREAM
+
+	fclose(debug);
+
+#endif
+
+	st_menu_unpost(menustate, true);
+	st_menu_delete(menustate);
 
 	if (active_item != NULL && !(c == 'q' && !press_accelerator))
 		printf("selected text: %s, code: %d\n", active_item->text, active_item->code);
