@@ -24,6 +24,12 @@ for CUA applications, and cannot be used for these types of applications.
 
 * Possible serialize and load state of menu objects
 
+* The usage pattern is close to original ncurses `menu` library. A menudata are
+  created by functions `st_menu_new` or `st_menu_new_menubar`. A function `st_menu_post`
+  displays menu, and function `st_menu_unpost` hides menu. Any event can be processed
+  in menu library by function `st_menu_driver` and menu can be removed by function 
+  `st_menu_delete`.
+
 # Screenshots
 
 ![](screenshots/scr1.png)
@@ -35,7 +41,16 @@ for CUA applications, and cannot be used for these types of applications.
 
 # Demo
 
-    gcc demo-st-menu.c -Wall -lncursesw -lpanel -lunistring -DNCURSES_WIDECHAR=1
+    make
+    ./demo
+
+Creates `demo` and `demo_sl`. `demo_sl` uses shared library - and it can be executed by
+`LD_LIBRARY_PATH=. /.demo_sl`.
+
+`Command|Set style` submenu is active - you can change styles interactivly.
+
+When there are no `ncursesw` library, then modify Makefile and replace `ncursesw` by `necurses`,
+and remove `-DNCURSES_WIDECHAR=1`
 
 # Dependency
 
@@ -43,3 +58,14 @@ for CUA applications, and cannot be used for these types of applications.
 
 * define NCURSES_WIDECHAR when wide char ncurses support is available.
 
+# Note
+
+If you like it, send a postcard from your home country to my address, please:
+
+    Pavel Stehule
+    Skalice 12
+    256 01 Benesov u Prahy
+    Czech Republic
+
+
+I invite any questions, comments, bug reports, patches on mail address pavel.stehule@gmail.com
