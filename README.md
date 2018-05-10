@@ -36,7 +36,7 @@ for CUA applications, and cannot be used for these types of applications.
 ![](screenshots/scr2.png)<!-- .element height="50%" width="50%" -->
 ![](screenshots/scr4.png)<!-- .element height="50%" width="50%" -->
 ![](screenshots/scr6.png)<!-- .element height="50%" width="50%" -->
-![](screenshots/scr8.png)<!-- .element height="50%" width="50%" -->
+![](screenshots/scr8.png){:height="36px" width="36px"}.
 
 
 # Demo
