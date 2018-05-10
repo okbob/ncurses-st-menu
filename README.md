@@ -32,11 +32,11 @@ for CUA applications, and cannot be used for these types of applications.
 
 # Screenshots
 
-![](screenshots/scr1.png)<!-- .element height="50%" width="50%" -->
-![](screenshots/scr2.png)<!-- .element height="50%" width="50%" -->
-![](screenshots/scr4.png)<!-- .element height="50%" width="50%" -->
-![](screenshots/scr6.png)<!-- .element height="50%" width="50%" -->
-![](screenshots/scr8.png =100x20)
+![](screenshots/small/scr1.png)
+![](screenshots/small/scr2.png)
+![](screenshots/small/scr4.png)
+![](screenshots/small/scr6.png)
+![](screenshots/small/scr8.png)
 
 
 # Demo
