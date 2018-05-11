@@ -193,7 +193,7 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	//setlocale(LC_ALL, "");
+	setlocale(LC_ALL, "");
 
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
