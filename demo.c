@@ -339,7 +339,9 @@ process_code:
 				refresh();
 			}
 			else
+			{
 				break;
+			}
 		}
 
 		if (c == 'q' && !press_accelerator)

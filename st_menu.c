@@ -969,7 +969,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		 * When we close some object, then we did some work on this
 		 * level, and we should not do more work here.
 		 */
-		if (processed || unpost_submenu)
+		if (processed || (unpost_submenu && !is_top))
 			goto draw_object;
 
 	}
