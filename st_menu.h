@@ -78,7 +78,7 @@ extern void st_menu_delete(struct ST_MENU_STATE *mstate);
 extern void st_menu_save(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows);
 extern void st_menu_load(struct ST_MENU_STATE *mstate, int *cursor_rows);
 
-extern ST_MENU *st_menu_active_item(bool *press_accelerator, bool *press_mouse);
+extern ST_MENU *st_menu_active_item(bool *press_accelerator, bool *button1_clicked);
 extern bool st_menu_is_active_submenu(struct ST_MENU_STATE *mstate);
 
 #endif

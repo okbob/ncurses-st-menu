@@ -51,7 +51,12 @@ repeat:
 	 * event, it returns data only once time.
 	 */
 	if (c == KEY_MOUSE)
-		getmouse(mevent);
+	{
+		int ok = getmouse(mevent);
+
+		if (ok != OK)
+			goto repeat;
+	}
 
 	if (c == ST_MENU_ESCAPE)
 	{
@@ -79,7 +84,7 @@ main()
 	ST_MENU		   *active_item;
 	struct ST_MENU_STATE *mstate;
 	bool	press_accelerator;
-	bool	press_mouse;
+	bool	button1_clicked;
 	int		c;
 	MEVENT	mevent;
 	int		i;
@@ -188,7 +193,7 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	setlocale(LC_ALL, "");
+	//setlocale(LC_ALL, "");
 
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
@@ -200,8 +205,7 @@ main()
 	clear();
 	cbreak();
 	noecho();
-	keypad(stdscr, true);
-	mouseinterval(0);
+	keypad(stdscr, TRUE);
 
 	refresh();
 
@@ -218,13 +222,16 @@ main()
 
 #if NCURSES_MOUSE_VERSION > 1
 
-	mousemask(BUTTON1_PRESSED | BUTTON4_PRESSED | BUTTON5_PRESSED, NULL);
+	/* BUTTON1_PRESSED | BUTTON1_RELEASED are mandatory enabled */
+	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED | BUTTON4_PRESSED | BUTTON5_PRESSED, NULL);
 
 #else
 
-	mousemask(BUTTON1_PRESSED, NULL);
+	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED, NULL);
 
 #endif
+
+	mouseinterval(0);
 
 	/* prepare main window */
 	getmaxyx(stdscr, maxy, maxx);
@@ -254,10 +261,7 @@ main()
 	/* post meubar (display it) */
 	st_menu_post(mstate);
 
-	doupdate();
-
 	c = get_event(&mevent, &alt);
-
 
 	refresh();
 
@@ -270,7 +274,7 @@ main()
 		 */
 		if (c == 10 && st_menu_is_active_submenu(mstate))
 		{
-			active_item = st_menu_active_item(&press_accelerator, &press_mouse);
+			active_item = st_menu_active_item(&press_accelerator, &button1_clicked);
 			if (active_item && !active_item->submenu)
 			{
 				goto process_code;
@@ -306,13 +310,13 @@ main()
 		}
 		else
 		{
-			/* send event to menubar (top object) */
 			processed = st_menu_driver(mstate, c, alt, &mevent);
 		}
+
 		doupdate();
 
-		active_item = st_menu_active_item(&press_accelerator, &press_mouse);
-		if (processed && (press_accelerator || press_mouse))
+		active_item = st_menu_active_item(&press_accelerator, &button1_clicked);
+		if (processed && (press_accelerator || button1_clicked))
 		{
 
 process_code:
@@ -326,7 +330,6 @@ process_code:
 
 				st_menu_delete(mstate);
 
-				/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
 				st_menu_load_style(&config,
 					style, style == ST_MENU_STYLE_ONECOLOR ? 1 : 2);
 

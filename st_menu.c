@@ -34,6 +34,7 @@ struct ST_MENU_STATE
 	WINDOW	   *shadow_window;
 	PANEL	   *shadow_panel;
 	int			cursor_row;
+	int			mouse_row;						/* mouse row where button1 was pressed */
 	ST_MENU_ACCELERATOR		*accelerators;
 	int			naccelerators;
 	ST_MENU_CONFIG *config;
@@ -51,10 +52,9 @@ struct ST_MENU_STATE
 	struct ST_MENU_STATE	**submenu_states;
 };
 
-
 static ST_MENU	   *selected_item = NULL;
 static bool			press_accelerator = false;
-static bool			press_mouse = false;
+static bool			button1_clicked = false;
 
 static inline int char_length(ST_MENU_CONFIG *config, const char *c);
 static inline int char_width(ST_MENU_CONFIG *config, char *c, int bytes);
@@ -868,6 +868,8 @@ st_menu_post(struct ST_MENU_STATE *mstate)
 	curs_set(0);
 	noecho();
 
+	mstate->mouse_row = -1;
+
 	/* show menu */
 	if (mstate->is_menubar)
 		menubar_draw(mstate);
@@ -890,6 +892,8 @@ st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu)
 		if (close_active_submenu)
 			mstate->active_submenu = NULL;
 	}
+
+	mstate->mouse_row = -1;
 
 	hide_panel(mstate->panel);
 	if (mstate->shadow_panel)
@@ -930,7 +934,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 	/* reset globals */
 	selected_item = NULL;
 	press_accelerator = false;
-	press_mouse = false;
+	button1_clicked = false;
 
 	*unpost_submenu = false;
 
@@ -969,7 +973,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		 * When we close some object, then we did some work on this
 		 * level, and we should not do more work here.
 		 */
-		if (processed || (unpost_submenu && !is_top))
+		if (processed)
 			goto draw_object;
 
 	}
@@ -1022,7 +1026,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 
 #endif
 
-		if (mevent->bstate & BUTTON1_PRESSED)
+		if (mevent->bstate & (BUTTON1_PRESSED | BUTTON1_RELEASED))
 		{
 			if (is_menubar)
 			{
@@ -1075,6 +1079,9 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			}
 		}
 	}
+	else
+		/* there are no mouse event, reset prev mouse row */
+		mstate->mouse_row = -1;
 
 	/*
 	 * Try to check if key is accelerator. This check should be on last level.
@@ -1181,10 +1188,37 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 				}
 			}
 
-			if ((press_mouse = (mouse_row != -1 && row == mouse_row)) ||
-				(press_accelerator = (search_row != -1 && row == search_row)))
+			if (mouse_row != -1 && row == mouse_row)
 			{
 				mstate->cursor_row = row;
+				found_row = true;
+				processed = true;
+				post_menu = true;
+
+				if (mevent->bstate & BUTTON1_PRESSED)
+				{
+					mstate->mouse_row = mouse_row;
+				}
+				else
+				{
+					/*
+					 * Fully valid release event for transformation to
+					 * clicked event is only event, when PRESSED row
+					 * and released row is same.
+					 */
+					if (mevent->bstate& BUTTON1_RELEASED &&
+							mstate->mouse_row == mouse_row)
+					{
+						button1_clicked = true;
+					}
+					mstate->mouse_row = -1;
+				}
+				break;
+			}
+			else if (search_row != -1 && row == search_row)
+			{
+				mstate->cursor_row = row;
+				press_accelerator = true;
 
 				found_row = true;
 				post_menu = true;
@@ -1242,16 +1276,23 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		post_menu = true;
 	}
 
-	if (press_accelerator || (c == KEY_DOWN && is_menubar) || (c == KEY_RIGHT && !is_menubar) || c == 10 || post_menu)
+	if (press_accelerator || 
+			  (c == KEY_DOWN && is_menubar) ||
+			  (c == KEY_RIGHT && !is_menubar) ||
+			  c == 10 || post_menu)
 	{
 		mstate->active_submenu = mstate->submenu_states[mstate->cursor_row - 1];
 		if (mstate->active_submenu)
 		{
 			/* when submenu is active, then reset accelerator and mouse flags */
 			press_accelerator = false;
-			press_mouse = false;
+			button1_clicked = false;
 		}
 
+		/*
+		 * When mouse event opens or reopens submenu, then we take
+		 * this event as processed event.
+		 */
 		if (press_accelerator)
 			processed = true;
 		else
@@ -1312,6 +1353,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 	mstate->title = title;
 	mstate->naccelerators = 0;
 	mstate->is_menubar = false;
+	mstate->mouse_row = -1;
 
 	/* how much items are in template */
 	aux_menu = menu;
@@ -1455,6 +1497,7 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	mstate->active_submenu = NULL;
 
 	mstate->is_menubar = true;
+	mstate->mouse_row = -1;
 
 	wbkgd(mstate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
 
@@ -1586,10 +1629,10 @@ st_menu_delete(struct ST_MENU_STATE *mstate)
  * Returns active item and info about selecting of active item
  */
 ST_MENU *
-st_menu_active_item(bool *_press_accelerator, bool *_press_mouse)
+st_menu_active_item(bool *_press_accelerator, bool *_button1_clicked)
 {
 	*_press_accelerator = press_accelerator;
-	*_press_mouse = press_mouse;
+	*_button1_clicked = button1_clicked;
 
 	return selected_item;
 }
