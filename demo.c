@@ -89,6 +89,7 @@ main()
 	MEVENT	mevent;
 	int		i;
 	bool	alt;
+	bool	requested_exit = false;
 
 	const char *demo = 
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore "
@@ -265,7 +266,7 @@ main()
 
 	refresh();
 
-	while (1)
+	while (!requested_exit)
 	{
 		bool	processed;
 
@@ -279,6 +280,17 @@ main()
 			{
 				goto process_code;
 			}
+		}
+
+		/*
+		 * test of possible shortcuts should be done before
+		 * st_menu_driver call. Here is test on F10 displayed on exit
+		 * field.
+		 */
+		if (c == KEY_F(10))
+		{
+			requested_exit = true;
+			break;
 		}
 
 		if (c == KEY_RESIZE)
@@ -341,14 +353,24 @@ process_code:
 
 				refresh();
 			}
+			/* here is processing of menucode related to Exit menu item */
+			else if (active_item && active_item->code == 34)
+			{
+				requested_exit = true;
+				break;
+			}
 			else
 			{
 				break;
 			}
 		}
 
+		/* q is common command for exit (when it is not used like accelerator */
 		if (c == 'q' && !press_accelerator)
+		{
+			requested_exit = true;
 			break;
+		}
 
 		/* get new event */
 		c = get_event(&mevent, &alt);
@@ -359,7 +381,9 @@ process_code:
 	st_menu_unpost(mstate, true);
 	st_menu_delete(mstate);
 
-	if (active_item != NULL && !(c == 'q' && !press_accelerator))
+	if (requested_exit)
+		printf("exiting...\n");
+	else if (active_item != NULL && !(c == 'q' && !press_accelerator))
 		printf("selected text: %s, code: %d\n", active_item->text, active_item->code);
 	else
 		printf("ending without select menu item\n");
