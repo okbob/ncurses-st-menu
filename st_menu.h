@@ -20,12 +20,15 @@
 
 #define	ST_MENU_ESCAPE		27
 
+#define ST_MENU_OPTION_DEFAULT		1
+#define ST_MENU_OPTION_DISABLED		2
+
 typedef struct _ST_MENU
 {
 	char	*text;						/* text of menu item, possible specify accelerator by ~ */
 	int		code;						/* code of menu item (optional) */
 	char	*shortcut;					/* shortcut text, only printed (optional) */
-	int		option;						/* locked, marked, ... (optional) */
+	int		options;					/* locked, marked, ... (optional) */
 	struct _ST_MENU *submenu;			/* reference to nested menu (optional) */
 } ST_MENU;
 

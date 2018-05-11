@@ -145,18 +145,18 @@ main()
 	};
 
 	ST_MENU _styles[] = {
-		{"_1_Midnight black", 70, NULL},
-		{"_2_Midnight", 71, NULL},
-		{"_3_Vision", 72, NULL},
-		{"_4_Dos", 73, NULL},
-		{"_5_FAND 1", 74, NULL},
-		{"_6_FAND 2", 75, NULL},
-		{"_7_Fox", 76, NULL},
-		{"_8_Perfect", 77, NULL},
-		{"_9_No color", 78, NULL},
-		{"_0_One color", 79, NULL},
-		{"_t_Turbo", 80, NULL},
-		{"_p_Pdmenu", 81, NULL},
+		{"_1_Midnight black", 70},
+		{"_2_Midnight", 71},
+		{"_3_Vision", 72},
+		{"_4_Dos", 73},
+		{"_5_FAND 1", 74},
+		{"_6_FAND 2", 75},
+		{"_7_Fox", 76},
+		{"_8_Perfect", 77},
+		{"_9_No color", 78},
+		{"_0_One color", 79},
+		{"_t_Turbo", 80},
+		{"_p_Pdmenu", 81, NULL, ST_MENU_OPTION_DEFAULT},
 		{NULL, -1, NULL}
 	};
 

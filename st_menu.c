@@ -371,6 +371,7 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 	int	max_text_width = 0;
 	int max_shortcut_width = 0;
 	int		naccel = 0;
+	int		default_row = -1;
 
 	*rows = 0;
 	*columns = 0;
@@ -409,6 +410,9 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 
 			if (menu->submenu)
 				shortcut_width += shortcut_width > 0 ? 2 : 1;
+
+			if (menu->options & ST_MENU_OPTION_DEFAULT && default_row == -1)
+				default_row = *rows;
 
 			/*
 			 * left alligned shortcuts are used by MC style
@@ -450,6 +454,9 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 	}
 	else
 		*item_x_pos = 1;
+
+	if (default_row != -1)
+		*first_row = default_row;
 }
 
 /*
