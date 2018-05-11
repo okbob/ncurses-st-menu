@@ -4,7 +4,8 @@ ncurses based library for CUA look menu
 
 I didn't find any library for Unix terminal applications for creating pull down and menu bar menus. 
 My short target is library for menu with midnight commander look. The origin ncurses menu are not designed
-for CUA applications, and cannot be used for these types of applications.
+for CUA applications, and cannot be used for these types of applications. This is library - small library.
+It does only pulldown menus and menubars, nothing else. It is not complex framework with thousand functions.
 
 # Features
 
