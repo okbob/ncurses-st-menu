@@ -135,7 +135,7 @@ main()
 		{"~R~ename/Move", 27, "F6"},
 		{"~M~kdir", 28, "F7"},
 		{"~D~elete", 29, "F8"},
-		{"~Q~uick cd", 30, "M-c"},
+		{"~Q~uick cd", 30, "M-c", ST_MENU_OPTION_DISABLED},
 		{"--", -1, NULL},
 		{"Select ~g~roup", 31, "+"},
 		{"U~n~select group", 32, "-"},
@@ -191,6 +191,7 @@ main()
 		{"~L~eft", 60, NULL, 0, _left},
 		{"~F~ile", 61, NULL, 0, _file},
 		{"~C~ommand", 62, NULL, 0, _command},
+		{"~O~ptions", 63, NULL, ST_MENU_OPTION_DISABLED, NULL},
 		{NULL, -1, NULL}
 	};
 
@@ -268,7 +269,7 @@ main()
 
 	while (!requested_exit)
 	{
-		bool	processed;
+		bool	processed = false;
 
 		/* when submenu is not active, then enter activate submenu,
 		 * else end

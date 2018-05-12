@@ -35,6 +35,7 @@ struct ST_MENU_STATE
 	PANEL	   *shadow_panel;
 	int			cursor_row;
 	int			mouse_row;						/* mouse row where button1 was pressed */
+	int		   *options;						/* state options, initially copyied from menu */
 	ST_MENU_ACCELERATOR		*accelerators;
 	int			naccelerators;
 	ST_MENU_CONFIG *config;
@@ -216,6 +217,7 @@ static int
 _save_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows, int write_pos)
 {
 	int		active_row = -1;
+	int		i;
 
 	if (write_pos >= max_rows)
 	{
@@ -228,8 +230,6 @@ _save_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows, in
 
 	if (mstate->submenu_states)
 	{
-		int		i;
-
 		for (i = 0; i < mstate->nitems; i++)
 		{
 			if (mstate->submenu_states[i])
@@ -241,6 +241,9 @@ _save_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows, in
 			}
 		}
 	}
+
+	for (i = 0; i < mstate->nitems; i++)
+		cursor_rows[write_pos++] = mstate->options[i];
 
 	cursor_rows[write_pos++] = active_row;
 
@@ -254,13 +257,12 @@ static int
 _load_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int read_pos)
 {
 	int		active_row;
+	int		i;
 
 	mstate->cursor_row = cursor_rows[read_pos++];
 
 	if (mstate->submenu_states)
 	{
-		int		i;
-
 		for (i = 0; i < mstate->nitems; i++)
 		{
 			if (mstate->submenu_states[i])
@@ -269,6 +271,9 @@ _load_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int read_pos)
 			}
 		}
 	}
+
+	for (i = 0; i < mstate->nitems; i++)
+		mstate->options[i] = cursor_rows[read_pos++];
 
 	active_row = cursor_rows[read_pos++];
 	if (active_row != -1)
@@ -482,6 +487,7 @@ menubar_draw(struct ST_MENU_STATE *mstate)
 		char	*text = aux_menu->text;
 		bool	highlight = false;
 		bool	is_cursor_row = mstate->cursor_row == i + 1;
+		bool	is_disabled = aux_menu->options & ST_MENU_OPTION_DISABLED;
 		int		current_pos;
 
 		/* bar_fields_x_pos holds x positions of menubar items */
@@ -498,6 +504,9 @@ menubar_draw(struct ST_MENU_STATE *mstate)
 		else
 			wmove(mstate->window, 0, current_pos);
 
+		if (is_disabled)
+			wattron(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+
 		while (*text)
 		{
 			/* there are not external accelerators */
@@ -510,22 +519,25 @@ menubar_draw(struct ST_MENU_STATE *mstate)
 					continue;
 				}
 
-				if (!highlight)
+				if (!is_disabled)
 				{
-					wattron(mstate->window,
-						COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
-								   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
-				}
-				else
-				{
-					wattroff(mstate->window,
-						COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
-								   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
-					if (is_cursor_row)
-						wattron(mstate->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
-				}
+					if (!highlight)
+					{
+						wattron(mstate->window,
+							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
+									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
+					}
+					else
+					{
+						wattroff(mstate->window,
+							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
+									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
+						if (is_cursor_row)
+							wattron(mstate->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+					}
 
-				highlight = !highlight;
+					highlight = !highlight;
+				}
 				text += 1;
 			}
 			else
@@ -543,9 +555,13 @@ menubar_draw(struct ST_MENU_STATE *mstate)
 			wattroff(mstate->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 		}
 
+		if (is_disabled)
+			wattroff(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+
 		aux_menu += 1;
 		i += 1;
 	}
+
 
 	wnoutrefresh(mstate->window);
 
@@ -722,6 +738,7 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 	while (menu->text != NULL)
 	{
 		bool	has_submenu = menu->submenu ? true : false;
+		bool	is_disabled = menu->options & ST_MENU_OPTION_DISABLED;
 
 		if (*menu->text == '\0' || strncmp(menu->text, "--", 2) == 0)
 		{
@@ -758,6 +775,9 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 				selected_item = menu;
 			}
 
+			if (is_disabled)
+				wattron(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+
 			is_extern_accel = (*text == '_' && text[1] != '_');
 
 			if (mstate->item_x_pos != 1 && !is_extern_accel)
@@ -779,30 +799,33 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 						continue;
 					}
 
-					if (!highlight)
+					if (!is_disabled)
 					{
-						wattron(draw_area,
-							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
-									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
-					}
-					else
-					{
-						wattroff(draw_area,
-							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
-									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
-						if (is_cursor_row)
-							wattron(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
-
-						if (is_extern_accel)
+						if (!highlight)
 						{
-							int		y, x;
-
-							getyx(draw_area, y, x);
-							wmove(draw_area, y, x + config->extern_accel_text_space);
+							wattron(draw_area,
+								COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
+										   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
 						}
-					}
+						else
+						{
+							wattroff(draw_area,
+								COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
+										   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
+							if (is_cursor_row)
+								wattron(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 
-					highlight = !highlight;
+							if (is_extern_accel)
+							{
+								int		y, x;
+
+								getyx(draw_area, y, x);
+								wmove(draw_area, y, x + config->extern_accel_text_space);
+							}
+						}
+
+						highlight = !highlight;
+					}
 					text += 1;
 				}
 				else
@@ -844,6 +867,9 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 
 			if (is_cursor_row)
 				wattroff(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+
+			if (is_disabled)
+				wattroff(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
 		}
 
 		menu += 1;
@@ -1136,7 +1162,9 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 	menu = mstate->menu; row = 1;
 	while (menu->text != 0)
 	{
-		if (*menu->text != '\0' && strncmp(menu->text, "--", 2) != 0)
+		if (*menu->text != '\0' &&
+				(strncmp(menu->text, "--", 2) != 0) &&
+				((mstate->options[row - 1] & ST_MENU_OPTION_DISABLED) == 0))
 		{
 			if (first_row == -1)
 			{
@@ -1373,6 +1401,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 	/* preallocate good enough memory */
 	mstate->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
 	mstate->submenu_states = safe_malloc(sizeof(struct ST_MENU_STATE) * menu_fields);
+	mstate->options = safe_malloc(sizeof(int) * menu_fields);
 
 	mstate->nitems = menu_fields;
 
@@ -1440,10 +1469,11 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 		else
 			mstate->submenu_states[i] = NULL;
 
+		mstate->options[i] = aux_menu->options;
+
 		aux_menu += 1;
 		i += 1;
 	}
-
 
 	/* draw area can be same like window or smaller */
 	if (config->wide_vborders || config->wide_hborders)
@@ -1489,7 +1519,6 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	(void) maxy;
 
 	mstate = safe_malloc(sizeof(struct ST_MENU_STATE));
-	memset(mstate, 0, sizeof(struct ST_MENU_STATE));
 
 	mstate->window = newwin(1, maxx, 0, 0);
 	mstate->panel = new_panel(mstate->window);
@@ -1526,6 +1555,7 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	mstate->bar_fields_x_pos = safe_malloc(sizeof(int) * (menu_fields + 1));
 	mstate->submenu_states = safe_malloc(sizeof(struct ST_MENU_STATE) * menu_fields);
 	mstate->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
+	mstate->options = safe_malloc(sizeof(int) * menu_fields);
 
 	mstate->nitems = menu_fields;
 
@@ -1577,6 +1607,8 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 		}
 
 		mstate->naccelerators = naccel;
+
+		mstate->options[i] = aux_menu->options;
 
 		aux_menu += 1;
 		i += 1;
@@ -1654,4 +1686,60 @@ st_menu_is_active_submenu(struct ST_MENU_STATE *mstate)
 	bool result = mstate->active_submenu != NULL;
 
 	return result;
+}
+
+/*
+ * Set flag of first menu item specified by code
+ */
+bool
+st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int option)
+{
+	ST_MENU *menu = mstate->menu;
+	int		i = 0;
+
+	while (menu->text)
+	{
+		if (menu->code == code)
+		{
+			mstate->options[i] |= option;
+			return true;
+		}
+
+		if (mstate->submenu_states[i])
+			if (st_menu_set_option(mstate->submenu_states[i], code, option))
+				return true;
+
+		menu += 1;
+		i += 1;
+	}
+
+	return false;
+}
+
+/*
+ * Reset flag of first menu item specified by code
+ */
+bool
+st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int option)
+{
+	ST_MENU *menu = mstate->menu;
+	int		i = 0;
+
+	while (menu->text)
+	{
+		if (menu->code == code)
+		{
+			mstate->options[i] &= ~option;
+			return true;
+		}
+
+		if (mstate->submenu_states[i])
+			if (st_menu_set_option(mstate->submenu_states[i], code, option))
+				return true;
+
+		menu += 1;
+		i += 1;
+	}
+
+	return false;
 }

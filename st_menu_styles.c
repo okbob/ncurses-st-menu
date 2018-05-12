@@ -41,6 +41,9 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
+			config->disabled_cpn = config->menu_background_cpn;
+			config->disabled_attr = A_BOLD;
+
 			config->left_alligned_shortcuts = true;
 			config->wide_vborders = false;
 			config->wide_hborders = false;
@@ -73,6 +76,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_cpn = start_from_cpn;
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLACK);
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
 
 			config->left_alligned_shortcuts = true;
 			config->wide_vborders = false;
@@ -107,6 +114,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_cpn = start_from_cpn;
 			config->cursor_accel_attr = 0;
 			init_pair(start_from_cpn++, COLOR_RED, COLOR_GREEN);
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = true;
@@ -151,6 +162,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
 			config->wide_hborders = false;
@@ -184,6 +199,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_cpn = start_from_cpn;
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
 
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
@@ -225,6 +244,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
 
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
 			config->wide_hborders = false;
@@ -265,6 +288,11 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_CYAN);
 
+			/* This is different, from original, but cyan text is not readable */
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
 			config->wide_hborders = false;
@@ -298,6 +326,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_cpn = start_from_cpn;
 			config->cursor_accel_attr = 0;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_RED);
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
@@ -335,6 +367,9 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_cpn = 0;
 			config->cursor_accel_attr = A_UNDERLINE | A_REVERSE;
 
+			config->disabled_cpn = 0;
+			config->disabled_attr = A_DIM;
+
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
 			config->wide_hborders = false;
@@ -364,6 +399,9 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 
 			config->cursor_accel_cpn = start_from_cpn;
 			config->cursor_accel_attr = A_UNDERLINE | A_REVERSE;
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_DIM;
 
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
@@ -404,6 +442,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
 			config->wide_hborders = false;
@@ -437,6 +479,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->cursor_accel_cpn = start_from_cpn;
 			config->cursor_accel_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
 
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
