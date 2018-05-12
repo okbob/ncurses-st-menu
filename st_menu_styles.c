@@ -132,7 +132,8 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 
 #if NCURSES_WIDECHAR > 0
 
-			config->submenu_tag = L'\x25BA';
+			if (!config->force8bit)
+				config->submenu_tag = L'\x25BA';
 
 #endif
 
@@ -217,7 +218,8 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 
 #if NCURSES_WIDECHAR > 0
 
-			config->submenu_tag = L'\x00BB';
+			if (!config->force8bit)
+				config->submenu_tag = L'\x00BB';
 
 #endif
 
@@ -261,7 +263,8 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 
 #if NCURSES_WIDECHAR > 0
 
-			config->submenu_tag = L'\x00BB';
+			if (!config->force8bit)
+				config->submenu_tag = L'\x00BB';
 
 #endif
 
@@ -344,7 +347,8 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 
 #if NCURSES_WIDECHAR > 0
 
-			config->submenu_tag = L'\x2BC8';
+			if (!config->force8bit)
+				config->submenu_tag = L'\x2BC8';
 
 #endif
 
