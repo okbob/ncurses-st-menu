@@ -113,6 +113,9 @@ Available styles:
 ```
 
 # Functions
+
+## API
+
 ```c
 extern int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn);
 extern void st_menu_set_desktop_panel(PANEL *pan);
@@ -133,6 +136,8 @@ extern bool st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int optio
 extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int option);
 ```
 
+## Description
+
 * `st_menu_load_style` - fill ST_MENU_CONFIG from predefined styles. `start_from_cpn` is first free
   color pair. This function returns next free color pair.
 
@@ -141,6 +146,27 @@ extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int opt
 
 * `st_menu_new` - create state variable for pull down menu from template. `st_menu_new_menubar` - same like
   previous function - creates menubar menu.
+
+* `st_menu_post` shows menu, `st_menu_unpost` hides menu. The hide doesn't throw state
+  data if `close_active_submenu` is false.
+
+* `st_menu_driver` - main functionality - sends events to st_menu library. Any event has three
+  parts - keycode, alt info (used or not used Alt key) and mouse event data.
+
+* `st_menu_delete` - remove state data of menu object from memory.
+
+* We can store menu's state data before deleting to int array. The state data can be restored
+  from this array by `st_menu_load` function. When menu objects are significantly changed, then
+  good practice is saving state data, deleting menu object, creating new menu object based on new
+  configuration, and load state data.
+
+* The selected menu item can be accessed via function `st_menu_selected_item`. When `activated` flag
+  is true, then selected item was touched by mouse, accelerator or enter key.
+
+* the menu state can be updated by function `st_menu_set_option` or function `st_menu_reset_option`.
+
+  
+
 
   
 
