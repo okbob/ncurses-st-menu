@@ -1,6 +1,8 @@
 Interface - API
 ===============
 
+# Structures
+
 ## Structure `ST_MENU`
 
 An array of this structures is used as imput template.
@@ -109,3 +111,37 @@ Available styles:
 #define ST_MENU_STYLE_PDMENU		11
 #define ST_MENU_STYLE_OLD_TURBO		12
 ```
+
+# Functions
+```c
+extern int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn);
+extern void st_menu_set_desktop_panel(PANEL *pan);
+
+extern struct ST_MENU_STATE *st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title);
+extern struct ST_MENU_STATE *st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu);
+
+extern void st_menu_post(struct ST_MENU_STATE *mstate);
+extern void st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu);
+extern bool st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent);
+extern void st_menu_delete(struct ST_MENU_STATE *mstate);
+extern void st_menu_save(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows);
+extern void st_menu_load(struct ST_MENU_STATE *mstate, int *cursor_rows);
+
+extern ST_MENU *st_menu_selected_item(bool *activated);
+
+extern bool st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int option);
+extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int option);
+```
+
+* `st_menu_load_style` - fill ST_MENU_CONFIG from predefined styles. `start_from_cpn` is first free
+  color pair. This function returns next free color pair.
+
+* `st_menu_set_desktop_panel` - allow to specify some panel used like desktop. The content of 
+   related window is used as source for shadow drawing.
+
+* `st_menu_new` - create state variable for pull down menu from template. `st_menu_new_menubar` - same like
+  previous function - creates menubar menu.
+
+  
+
+
