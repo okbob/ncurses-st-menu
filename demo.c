@@ -7,6 +7,19 @@
 
 #include "st_menu.h"
 
+#ifdef DEBUG_PIPE
+
+/*
+ * When you would to use named pipe for debugging, then there should
+ * be active reader from this pipe before start demo application.
+ * In this case "tail -f ~/debug" inside other terminal.
+ */
+
+FILE   *debug_pipe = NULL;
+int		debug_eventno = 0;
+
+#endif
+
 /*
  * Read event. When event is mouse event, read mouse data
  *
@@ -195,6 +208,12 @@ main()
 		{NULL, -1, NULL}
 	};
 
+#ifdef DEBUG_PIPE
+
+	debug_pipe = fopen(DEBUG_PIPE, "w");
+
+#endif
+
 	setlocale(LC_ALL, "");
 
 	/* Don't use UTF when terminal doesn't use UTF */
@@ -373,6 +392,12 @@ process_code:
 			break;
 		}
 
+#ifdef DEBUG_PIPE
+
+	fflush(debug_pipe);
+
+#endif
+
 		/* get new event */
 		c = get_event(&mevent, &alt);
 	}
@@ -388,6 +413,12 @@ process_code:
 		printf("selected text: %s, code: %d\n", active_item->text, active_item->code);
 	else
 		printf("ending without select menu item\n");
+
+#ifdef DEBUG_PIPE
+
+	fclose(debug_pipe);
+
+#endif
 
 	return 0;
 }

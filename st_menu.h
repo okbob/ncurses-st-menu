@@ -23,6 +23,25 @@
 #define ST_MENU_OPTION_DEFAULT		1
 #define ST_MENU_OPTION_DISABLED		2
 
+/*
+ * Uncomment it and set for your environment when you would to
+ * use named pipe for debugging.
+ */
+#define DEBUG_PIPE		"/home/pavel/debug"
+
+#ifdef DEBUG_PIPE
+
+/*
+ * When you would to use named pipe for debugging, then there should
+ * be active reader from this pipe before start demo application.
+ * In this case "tail -f ~/debug" inside other terminal.
+ */
+
+extern FILE   *debug_pipe;
+extern int		debug_eventno;
+
+#endif
+
 typedef struct _ST_MENU
 {
 	char	*text;						/* text of menu item, possible specify accelerator by ~ */
