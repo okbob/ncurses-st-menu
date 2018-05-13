@@ -125,8 +125,7 @@ main()
 	ST_MENU_CONFIG  config;
 	ST_MENU		   *active_item;
 	struct ST_MENU_STATE *mstate;
-	bool	press_accelerator;
-	bool	button1_clicked;
+	bool	activated;
 	int		c;
 	MEVENT	mevent;
 	int		i;
@@ -322,18 +321,6 @@ main()
 	{
 		bool	processed = false;
 
-		/* when submenu is not active, then enter activate submenu,
-		 * else end
-		 */
-		if (c == 10 && st_menu_is_active_submenu(mstate))
-		{
-			active_item = st_menu_active_item(&press_accelerator, &button1_clicked);
-			if (active_item && !active_item->submenu)
-			{
-				goto process_code;
-			}
-		}
-
 		/*
 		 * test of possible shortcuts should be done before
 		 * st_menu_driver call. Here is test on F10 displayed on exit
@@ -373,19 +360,14 @@ main()
 			doupdate();
 		}
 		else
-		{
 			processed = st_menu_driver(mstate, c, alt, &mevent);
-		}
 
 		doupdate();
 
-		active_item = st_menu_active_item(&press_accelerator, &button1_clicked);
-		if (processed && (press_accelerator || button1_clicked))
+		active_item = st_menu_selected_item(&activated);
+		if (processed && active_item && activated)
 		{
-
-process_code:
-
-			if (active_item && active_item->code >= 70 && active_item->code <= 82)
+			if (active_item->code >= 70 && active_item->code <= 82)
 			{
 				int		style = active_item->code - 70;
 				int		cursor_store[1024];
@@ -406,7 +388,7 @@ process_code:
 				refresh();
 			}
 			/* here is processing of menucode related to Exit menu item */
-			else if (active_item && active_item->code == 34)
+			else if (active_item->code == 34)
 			{
 				requested_exit = true;
 				break;
@@ -418,7 +400,7 @@ process_code:
 		}
 
 		/* q is common command for exit (when it is not used like accelerator */
-		if (c == 'q' && !press_accelerator)
+		if (c == 'q' && !activated)
 		{
 			requested_exit = true;
 			break;
@@ -441,7 +423,7 @@ process_code:
 
 	if (requested_exit)
 		printf("exiting...\n");
-	else if (active_item != NULL && !(c == 'q' && !press_accelerator))
+	else if (active_item)
 		printf("selected text: %s, code: %d\n", active_item->text, active_item->code);
 	else
 		printf("ending without select menu item\n");

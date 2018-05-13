@@ -56,6 +56,7 @@ struct ST_MENU_STATE
 static ST_MENU	   *selected_item = NULL;
 static bool			press_accelerator = false;
 static bool			button1_clicked = false;
+static bool			press_enter = false;
 
 static inline int char_length(ST_MENU_CONFIG *config, const char *c);
 static inline int char_width(ST_MENU_CONFIG *config, char *c, int bytes);
@@ -996,6 +997,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 	/* reset globals */
 	selected_item = NULL;
 	press_accelerator = false;
+	press_enter = false;
 	button1_clicked = false;
 
 	*unpost_submenu = false;
@@ -1355,6 +1357,14 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		post_menu = true;
 	}
 
+	/* enter has sense only on selectable menu item */
+	if (c == 10 && mstate->cursor_row != -1)
+		press_enter = true;
+
+	/*
+	 * Some actions can activate submenu, check it and open it, if it
+	 * is required.
+	 */
 	if (press_accelerator || 
 			  (c == KEY_DOWN && is_menubar) ||
 			  (c == KEY_RIGHT && !is_menubar) ||
@@ -1365,14 +1375,16 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		{
 			/* when submenu is active, then reset accelerator and mouse flags */
 			press_accelerator = false;
+			press_enter = false;
 			button1_clicked = false;
 		}
 
 		/*
 		 * When mouse event opens or reopens submenu, then we take
-		 * this event as processed event.
+		 * this event as processed event. Valid accelerator is processed
+		 * always. Enter (c == 10) is processed always too.
 		 */
-		if (press_accelerator)
+		if (press_accelerator || c == 10)
 			processed = true;
 		else
 			processed = mstate->active_submenu != NULL;
@@ -1712,24 +1724,11 @@ st_menu_delete(struct ST_MENU_STATE *mstate)
  * Returns active item and info about selecting of active item
  */
 ST_MENU *
-st_menu_active_item(bool *_press_accelerator, bool *_button1_clicked)
+st_menu_selected_item(bool *activated)
 {
-	*_press_accelerator = press_accelerator;
-	*_button1_clicked = button1_clicked;
+	*activated = press_accelerator || press_enter || button1_clicked;
 
 	return selected_item;
-}
-
-/*
- * returns true, whem menu has active submenu
- * example: menubar has active pulldown menu.
- */
-bool
-st_menu_is_active_submenu(struct ST_MENU_STATE *mstate)
-{
-	bool result = mstate->active_submenu != NULL;
-
-	return result;
 }
 
 /*

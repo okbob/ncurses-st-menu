@@ -27,9 +27,9 @@
 /*
  * Uncomment it and set for your environment when you would to
  * use named pipe for debugging.
- *
-#define DEBUG_PIPE		"/home/pavel/debug"
  */
+#define DEBUG_PIPE		"/home/pavel/debug"
+// */
 
 #ifdef DEBUG_PIPE
 
@@ -102,8 +102,7 @@ extern void st_menu_delete(struct ST_MENU_STATE *mstate);
 extern void st_menu_save(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows);
 extern void st_menu_load(struct ST_MENU_STATE *mstate, int *cursor_rows);
 
-extern ST_MENU *st_menu_active_item(bool *press_accelerator, bool *button1_clicked);
-extern bool st_menu_is_active_submenu(struct ST_MENU_STATE *mstate);
+extern ST_MENU *st_menu_selected_item(bool *activated);
 
 extern bool st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int option);
 extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int option);
