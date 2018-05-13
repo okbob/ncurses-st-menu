@@ -943,12 +943,13 @@ st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu)
  * x, y points.
  */
 static void
-add_correction(WINDOW *p, WINDOW *s, int *y, int *x)
+add_correction(WINDOW *s, int *y, int *x)
 {
-	if (p != s)
+	if (is_subwin(s))
 	{
 		int	py, px, sy, sx, oy, ox;
 		int fix_y, fix_x;
+		WINDOW *p = wgetparent(s);
 
 		getbegyx(p, py, px);
 		getbegyx(s, sy, sx);
@@ -1063,7 +1064,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			 * current draw_area coordinates and expected coordinates. Then
 			 * apply this fix on mouse position.
 			 */
-			add_correction(mstate->window, mstate->draw_area, &y, &x);
+			add_correction(mstate->draw_area, &y, &x);
 
 			if (!is_menubar && !wenclose(mstate->draw_area, y, x))
 			{
@@ -1147,7 +1148,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 				col = mevent->x;
 
 				/* fix mouse coordinates, if draw_area has "wrong" coordinates */
-				add_correction(mstate->window, mstate->draw_area, &row, &col);
+				add_correction(mstate->draw_area, &row, &col);
 
 				/* calculate row from transformed mouse event */
 				if (wmouse_trafo(mstate->draw_area, &row, &col, false))
