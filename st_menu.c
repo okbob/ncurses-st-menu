@@ -946,11 +946,15 @@ st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu)
 static void
 add_correction(WINDOW *s, int *y, int *x)
 {
-	if (is_subwin(s))
+	WINDOW *p = wgetparent(s);
+	/*
+	 * Note: function is_subwin is unknown on some
+	 * older ncurses implementations. Don't use it.
+	 */
+	if (p)
 	{
 		int	py, px, sy, sx, oy, ox;
 		int fix_y, fix_x;
-		WINDOW *p = wgetparent(s);
 
 		getbegyx(p, py, px);
 		getbegyx(s, sy, sx);
