@@ -65,19 +65,6 @@ and remove `-DNCURSES_WIDECHAR=1`
 
 #include "st_menu.h"
 
-#ifdef DEBUG_PIPE
-
-/*
- * When you would to use named pipe for debugging, then there should
- * be active reader from this pipe before start demo application.
- * In this case "tail -f ~/debug" inside other terminal.
- */
-
-FILE   *debug_pipe = NULL;
-int		debug_eventno = 0;
-
-#endif
-
 /*
  * Read event. When event is mouse event, read mouse data
  *
@@ -287,7 +274,6 @@ main()
 	for (i = 0; i <= maxy; i++)
 	{
 		wmove(stdscr, i, 0);
-
 		waddnstr(stdscr, demo + i , maxx);
 	}
 
