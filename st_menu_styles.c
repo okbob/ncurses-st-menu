@@ -293,8 +293,8 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 
 			/* This is different, from original, but cyan text is not readable */
 			config->disabled_cpn = start_from_cpn;
-			config->disabled_attr = A_BOLD;
-			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+			config->disabled_attr = 0;
+			init_pair(start_from_cpn++, COLOR_CYAN, COLOR_WHITE);
 
 			config->left_alligned_shortcuts = false;
 			config->wide_vborders = false;
