@@ -67,8 +67,6 @@ repeat:
 
 #endif
 
-
-
 	/*
 	 * Read mouse event when it is possible. Do it now, before st_meny_driver call,
 	 * as protection to unwanted multiple call of getmouse function. For one mouse
