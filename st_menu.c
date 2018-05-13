@@ -936,6 +936,34 @@ st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu)
 }
 
 /*
+ * The coordinates of subwin are not "correctly" refreshed, when
+ * parent panel is moved. Maybe it is bug in ncurses, maybe not.
+ * The new coordinates are calculated from parent and offset to parent
+ * and difference between new and old coordinates is applyed on
+ * x, y points.
+ */
+static void
+add_correction(WINDOW *p, WINDOW *s, int *y, int *x)
+{
+	if (p != s)
+	{
+		int	py, px, sy, sx, oy, ox;
+		int fix_y, fix_x;
+
+		getbegyx(p, py, px);
+		getbegyx(s, sy, sx);
+		getparyx(s, oy, ox);
+
+		fix_y = sy - (py + oy);
+		fix_x = sx - (px + ox);
+
+		*y += fix_y;
+		*x += fix_x;
+	}
+}
+
+
+/*
  * Handle any outer event - pressed key, or mouse event. This driver
  * doesn't handle shortcuts - shortcuts are displayed only.
  * is_top is true, when _st_menu_driver is called first time, when
@@ -1008,7 +1036,6 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		 */
 		if (processed)
 			goto draw_object;
-
 	}
 
 	/*
@@ -1023,9 +1050,22 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			return true;
 		}
 
-		if (mevent->bstate & BUTTON1_PRESSED)
+		if (mevent->bstate & (BUTTON1_PRESSED | BUTTON1_RELEASED))
 		{
-			if (!is_menubar && !wenclose(mstate->draw_area, mevent->y, mevent->x))
+			int		y = mevent->y;
+			int		x = mevent->x;
+
+			/*
+			 * For some styles, the window is different than draw_area. The
+			 * draw_area is subwindow of window. When main window is moved
+			 * due moving panel (see adjust position), then subwindow has not
+			 * expected coordinates. Following routine calculate fix between
+			 * current draw_area coordinates and expected coordinates. Then
+			 * apply this fix on mouse position.
+			 */
+			add_correction(mstate->window, mstate->draw_area, &y, &x);
+
+			if (!is_menubar && !wenclose(mstate->draw_area, y, x))
 			{
 				*unpost_submenu = true;
 				return false;
@@ -1105,6 +1145,9 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 
 				row = mevent->y;
 				col = mevent->x;
+
+				/* fix mouse coordinates, if draw_area has "wrong" coordinates */
+				add_correction(mstate->window, mstate->draw_area, &row, &col);
 
 				/* calculate row from transformed mouse event */
 				if (wmouse_trafo(mstate->draw_area, &row, &col, false))

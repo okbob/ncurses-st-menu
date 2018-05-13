@@ -26,8 +26,9 @@
 /*
  * Uncomment it and set for your environment when you would to
  * use named pipe for debugging.
- */
+ *
 #define DEBUG_PIPE		"/home/pavel/debug"
+ */
 
 #ifdef DEBUG_PIPE
 

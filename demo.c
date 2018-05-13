@@ -82,6 +82,12 @@ repeat:
 
 	*alt = !first_event;
 
+#ifdef DEBUG_PIPE
+
+	debug_eventno += 1;
+
+#endif
+
 	return c;
 }
 
@@ -211,6 +217,8 @@ main()
 #ifdef DEBUG_PIPE
 
 	debug_pipe = fopen(DEBUG_PIPE, "w");
+	fprintf(debug_pipe, "demo application start\n");
+	fflush(debug_pipe);
 
 #endif
 
@@ -416,6 +424,7 @@ process_code:
 
 #ifdef DEBUG_PIPE
 
+	fprintf(debug_pipe, "demo application end\n");
 	fclose(debug_pipe);
 
 #endif
