@@ -17,6 +17,7 @@
 #define ST_MENU_STYLE_ONECOLOR		9
 #define ST_MENU_STYLE_TURBO			10
 #define ST_MENU_STYLE_PDMENU		11
+#define ST_MENU_STYLE_OLD_TURBO		12
 
 #define	ST_MENU_ESCAPE		27
 
@@ -27,8 +28,9 @@
  * Uncomment it and set for your environment when you would to
  * use named pipe for debugging.
  *
-#define DEBUG_PIPE		"/home/pavel/debug"
  */
+#define DEBUG_PIPE		"/home/pavel/debug"
+
 
 #ifdef DEBUG_PIPE
 

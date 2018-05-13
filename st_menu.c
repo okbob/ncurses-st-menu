@@ -1051,7 +1051,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			return true;
 		}
 
-		if (mevent->bstate & (BUTTON1_PRESSED | BUTTON1_RELEASED))
+		if (c == KEY_MOUSE && mevent->bstate & (BUTTON1_PRESSED | BUTTON1_RELEASED))
 		{
 			int		y = mevent->y;
 			int		x = mevent->x;

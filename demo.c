@@ -2,6 +2,7 @@
 #include <locale.h>
 #include <ncurses.h>
 #include <panel.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unicase.h>
 
@@ -34,6 +35,14 @@ get_event(MEVENT *mevent, bool *alt)
 	bool	first_event = true;
 	int		c;
 
+#ifdef DEBUG_PIPE
+
+	char	buffer[20];
+
+	fflush(debug_pipe);
+
+#endif
+
 #if NCURSES_WIDECHAR > 0
 
 	wint_t	ch;
@@ -57,6 +66,8 @@ repeat:
 	c = getch();
 
 #endif
+
+
 
 	/*
 	 * Read mouse event when it is possible. Do it now, before st_meny_driver call,
@@ -85,6 +96,20 @@ repeat:
 #ifdef DEBUG_PIPE
 
 	debug_eventno += 1;
+	if (c == KEY_MOUSE)
+	{
+		sprintf(buffer, ", bstate: %08x", mevent->bstate);
+	}
+	else
+		buffer[0] = '\0';
+
+	fprintf(debug_pipe, "*** eventno: %d, key: %s%s%s ***\n",
+			  debug_eventno,
+			  *alt ? "Alt " : "",
+			  keyname(c),
+			  buffer);
+
+	fflush(debug_pipe);
 
 #endif
 
@@ -177,6 +202,7 @@ main()
 		{"_0_One color", 79},
 		{"_t_Turbo", 80},
 		{"_p_Pdmenu", 81, NULL, ST_MENU_OPTION_DEFAULT},
+		{"_o_Old Turbo", 82},
 		{NULL, -1, NULL}
 	};
 
@@ -201,7 +227,7 @@ main()
 		{"Edit ~m~enu file", 50, NULL},
 		{"Edit highli~g~hting group file", 51, NULL},
 		{"--", -1, NULL},
-		{"Set style", 52, NULL, 0, _styles},
+		{"Set st~y~le", 52, NULL, 0, _styles},
 		{"_@_Do something on current file", 53, NULL},
 		{NULL, -1, NULL}
 	};
@@ -361,7 +387,7 @@ main()
 
 process_code:
 
-			if (active_item && active_item->code >= 70 && active_item->code <= 81)
+			if (active_item && active_item->code >= 70 && active_item->code <= 82)
 			{
 				int		style = active_item->code - 70;
 				int		cursor_store[1024];
