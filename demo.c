@@ -123,6 +123,7 @@ main()
 	int		maxx, maxy;
 	PANEL *mainpanel;
 	ST_MENU_CONFIG  config;
+	ST_MENU_CONFIG config_b;
 	ST_MENU		   *active_item;
 	struct ST_MENU_STATE *mstate;
 	bool	activated;
@@ -131,6 +132,7 @@ main()
 	int		i;
 	bool	alt;
 	bool	requested_exit = false;
+	int		style = 10;
 
 	const char *demo = 
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore "
@@ -341,6 +343,9 @@ main()
 			st_menu_save(mstate, cursor_store, 1023);
 
 			st_menu_delete(mstate);
+			mstate = st_menu_new_menubar2(&config,
+						style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
+
 			mstate = st_menu_new_menubar(&config, menubar);
 
 			st_menu_load(mstate, cursor_store);
@@ -359,10 +364,10 @@ main()
 		{
 			if (active_item->code >= 70 && active_item->code <= 83)
 			{
-				int		style = active_item->code - 70;
 				int		cursor_store[1024];
 				int		fcp = style == ST_MENU_STYLE_ONECOLOR ? 1 : 2;
-				ST_MENU_CONFIG config_b;
+
+				style = active_item->code - 70;
 
 				st_menu_save(mstate, cursor_store, 1023);
 
