@@ -18,6 +18,8 @@
 #define ST_MENU_STYLE_TURBO			10
 #define ST_MENU_STYLE_PDMENU		11
 #define ST_MENU_STYLE_OLD_TURBO		12
+#define ST_MENU_STYLE_FREE_DOS		13
+#define ST_MENU_STYLE_FREE_DOS_P	14
 
 #define	ST_MENU_ESCAPE		27
 
@@ -94,6 +96,7 @@ extern int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_
 extern void st_menu_set_desktop_panel(PANEL *pan);
 extern struct ST_MENU_STATE *st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title);
 extern struct ST_MENU_STATE *st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu);
+extern struct ST_MENU_STATE *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU *menu);
 
 extern void st_menu_post(struct ST_MENU_STATE *mstate);
 extern void st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu);

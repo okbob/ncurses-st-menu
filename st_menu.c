@@ -1561,8 +1561,8 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 /*
  * Create state variable for menubar based on template (array) of ST_MENU
  */
-struct ST_MENU_STATE *
-st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
+struct
+ST_MENU_STATE *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU *menu)
 {
 	struct ST_MENU_STATE *mstate;
 	int		maxy, maxx;
@@ -1573,6 +1573,9 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	int		current_pos;
 	int		i = 0;
 	int		naccel = 0;
+
+	if (pdcfg == NULL)
+		pdcfg = barcfg;
 
 	getmaxyx(stdscr, maxy, maxx);
 
@@ -1588,7 +1591,7 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	mstate->shadow_window = NULL;
 	mstate->shadow_panel = NULL;
 
-	mstate->config = config;
+	mstate->config = barcfg;
 	mstate->menu = menu;
 	mstate->cursor_row = 1;
 	mstate->active_submenu = NULL;
@@ -1596,15 +1599,15 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	mstate->is_menubar = true;
 	mstate->mouse_row = -1;
 
-	wbkgd(mstate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
+	wbkgd(mstate->window, COLOR_PAIR(barcfg->menu_background_cpn) | barcfg->menu_background_attr);
 
 	aux_menu = menu;
 	while (aux_menu->text)
 	{
 		menu_fields += 1;
 
-		if (config->text_space == -1)
-			aux_width += menutext_displaywidth(config, aux_menu->text, NULL, NULL);
+		if (barcfg->text_space == -1)
+			aux_width += menutext_displaywidth(barcfg, aux_menu->text, NULL, NULL);
 
 		aux_menu += 1;
 	}
@@ -1623,7 +1626,7 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	/*
 	 * When text_space is not defined, then try to vallign menu items
 	 */
-	if (config->text_space == -1)
+	if (barcfg->text_space == -1)
 	{
 		text_space = (maxx + 1 - aux_width) / (menu_fields + 1);
 		if (text_space < 4)
@@ -1634,8 +1637,8 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	}
 	else
 	{
-		text_space = config->text_space;
-		current_pos = config->init_text_space;
+		text_space = barcfg->text_space;
+		current_pos = barcfg->init_text_space;
 	}
 
 	/* Initialize submenu */
@@ -1645,24 +1648,24 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 		char	*accelerator;
 
 		mstate->bar_fields_x_pos[i] = current_pos;
-		current_pos += menutext_displaywidth(config, aux_menu->text, &accelerator, NULL);
+		current_pos += menutext_displaywidth(barcfg, aux_menu->text, &accelerator, NULL);
 		current_pos += text_space;
 		if (aux_menu->submenu)
 		{
 			mstate->submenu_states[i] = 
-					st_menu_new(config, aux_menu->submenu,
+					st_menu_new(pdcfg, aux_menu->submenu,
 										1, mstate->bar_fields_x_pos[i] + 
-										config->menu_bar_menu_offset
-										- (config->draw_box ? 1 : 0)
-										- (config->wide_vborders ? 1 : 0)
-										- (config->extra_inner_space ? 1 : 0) - 1, NULL);
+										pdcfg->menu_bar_menu_offset
+										- (pdcfg->draw_box ? 1 : 0)
+										- (pdcfg->wide_vborders ? 1 : 0)
+										- (pdcfg->extra_inner_space ? 1 : 0) - 1, NULL);
 		}
 		else
 			mstate->submenu_states[i] = NULL;
 
 		if (accelerator)
 		{
-			mstate->accelerators[naccel].c = chr_casexfrm(config, accelerator);
+			mstate->accelerators[naccel].c = chr_casexfrm(barcfg, accelerator);
 			mstate->accelerators[naccel].length = strlen(mstate->accelerators[naccel].c);
 			mstate->accelerators[naccel++].row = i + 1;
 		}
@@ -1681,6 +1684,12 @@ st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
 	mstate->bar_fields_x_pos[i] = current_pos;
 
 	return mstate;
+}
+
+struct ST_MENU_STATE *
+st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
+{
+	return st_menu_new_menubar2(config, NULL, menu);
 }
 
 /*

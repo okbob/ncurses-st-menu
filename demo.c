@@ -200,6 +200,7 @@ main()
 		{"_t_Turbo", 80},
 		{"_p_Pdmenu", 81, NULL, ST_MENU_OPTION_DEFAULT},
 		{"_o_Old Turbo", 82},
+		{"_f_Free Dos", 83},
 		{NULL, -1, NULL}
 	};
 
@@ -356,19 +357,23 @@ main()
 		active_item = st_menu_selected_item(&activated);
 		if (processed && activated)
 		{
-			if (active_item->code >= 70 && active_item->code <= 82)
+			if (active_item->code >= 70 && active_item->code <= 83)
 			{
 				int		style = active_item->code - 70;
 				int		cursor_store[1024];
+				int		fcp = style == ST_MENU_STYLE_ONECOLOR ? 1 : 2;
+				ST_MENU_CONFIG config_b;
 
 				st_menu_save(mstate, cursor_store, 1023);
 
 				st_menu_delete(mstate);
 
-				st_menu_load_style(&config,
-					style, style == ST_MENU_STYLE_ONECOLOR ? 1 : 2);
+				if (style == ST_MENU_STYLE_FREE_DOS)
+					fcp = st_menu_load_style(&config_b, ST_MENU_STYLE_FREE_DOS_P, fcp);
 
-				mstate = st_menu_new_menubar(&config, menubar);
+				st_menu_load_style(&config, style, fcp);
+
+				mstate = st_menu_new_menubar2(&config, style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 
 				st_menu_load(mstate, cursor_store);
 
