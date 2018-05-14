@@ -1,12 +1,13 @@
 all: libst_menu.so libst_menu.a demo
 
-# possible to use gcc flag -DNCURSES_WIDECHAR=1
+# possible to use gcc flag -DNCURSES_WIDECHAR=1 where is possible
+# then any unicode char can be a accelerator
 
 st_menu_styles.o: st_menu_styles.c st_menu.h
-	gcc -fPIC st_menu_styles.c -o st_menu_styles.o -Wall -c 
+	gcc -fPIC st_menu_styles.c -o st_menu_styles.o -Wall -c -O3
 
 st_menu.o: st_menu.h st_menu.c
-	gcc -fPIC st_menu.c -o st_menu.o -Wall -c
+	gcc -fPIC st_menu.c -o st_menu.o -Wall -c -O3
 
 libst_menu.so: st_menu_styles.o st_menu.o
 	gcc -shared -Wl,-soname,libst_menu.so -o libst_menu.so st_menu.o st_menu_styles.o
