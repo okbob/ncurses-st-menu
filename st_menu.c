@@ -1200,8 +1200,9 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 
 			free(pressed);
 
-			/* Accelerators are processed every time, although it is not success */
-			processed = true;
+			/* Process key in this case only when we found accelerator */
+			if (search_row != -1)
+				processed = true;
 		}
 	}
 
@@ -1730,7 +1731,13 @@ st_menu_delete(struct ST_MENU_STATE *mstate)
 ST_MENU *
 st_menu_selected_item(bool *activated)
 {
-	*activated = press_accelerator || press_enter || button1_clicked;
+	/*
+	 * Activated can be true only when selected_item is valid
+	 */
+	if (selected_item)
+		*activated = press_accelerator || press_enter || button1_clicked;
+	else
+		*activated = false;
 
 	return selected_item;
 }

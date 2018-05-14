@@ -321,17 +321,6 @@ main()
 	{
 		bool	processed = false;
 
-		/*
-		 * test of possible shortcuts should be done before
-		 * st_menu_driver call. Here is test on F10 displayed on exit
-		 * field.
-		 */
-		if (c == KEY_F(10))
-		{
-			requested_exit = true;
-			break;
-		}
-
 		if (c == KEY_RESIZE)
 		{
 			int		cursor_store[1024];
@@ -365,7 +354,7 @@ main()
 		doupdate();
 
 		active_item = st_menu_selected_item(&activated);
-		if (processed && active_item && activated)
+		if (processed && activated)
 		{
 			if (active_item->code >= 70 && active_item->code <= 82)
 			{
@@ -400,7 +389,7 @@ main()
 		}
 
 		/* q is common command for exit (when it is not used like accelerator */
-		if (c == 'q' && !activated)
+		if (!processed && (c == 'q' || c == KEY_F(10)))
 		{
 			requested_exit = true;
 			break;
