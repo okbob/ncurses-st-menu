@@ -346,8 +346,6 @@ main()
 			mstate = st_menu_new_menubar2(&config,
 						style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 
-			mstate = st_menu_new_menubar(&config, menubar);
-
 			st_menu_load(mstate, cursor_store);
 
 			st_menu_post(mstate);
@@ -365,7 +363,7 @@ main()
 			if (active_item->code >= 70 && active_item->code <= 83)
 			{
 				int		cursor_store[1024];
-				int		fcp = style == ST_MENU_STYLE_ONECOLOR ? 1 : 2;
+				int		fcp = 2;
 
 				style = active_item->code - 70;
 
@@ -374,9 +372,13 @@ main()
 				st_menu_delete(mstate);
 
 				if (style == ST_MENU_STYLE_FREE_DOS)
-					fcp = st_menu_load_style(&config_b, ST_MENU_STYLE_FREE_DOS_P, fcp);
+					fcp = st_menu_load_style(&config_b,
+												ST_MENU_STYLE_FREE_DOS_P,
+												style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp);
 
-				st_menu_load_style(&config, style, fcp);
+				st_menu_load_style(&config,
+										style,
+										style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp);
 
 				mstate = st_menu_new_menubar2(&config, style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 

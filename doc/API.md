@@ -145,7 +145,8 @@ extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int opt
    related window is used as source for shadow drawing.
 
 * `st_menu_new` - create state variable for pull down menu from template. `st_menu_new_menubar` - same like
-  previous function - creates menubar menu.
+  previous function - creates menubar menu. `st_menu_new_menubar2` allow to specify different configurations
+  (different styles) form menubar and pulldown menu (see FREE DOS style).
 
 * `st_menu_post` shows menu, `st_menu_unpost` hides menu. The hide doesn't throw state
   data if `close_active_submenu` is false.

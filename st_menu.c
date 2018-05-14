@@ -1180,7 +1180,12 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		int		l_pressed;
 		int		i;
 
-		if (!alt || (alt && is_menubar))
+		/*
+		 * accelerator can be alt accelerator for menuber or non alt, and
+		 * the menu should not to have active submenu.
+		 */
+		if ((!alt && !mstate->active_submenu) ||
+				(alt && is_menubar))
 		{
 			l_pressed = wchar_to_utf8(config, buffer, 20, (wchar_t) c);
 			buffer[l_pressed] = '\0';
@@ -1193,8 +1198,13 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 				if (mstate->accelerators[i].length == l_pressed &&
 					memcmp(mstate->accelerators[i].c, pressed, l_pressed) == 0)
 				{
+					/* check if row is enabled */
 					search_row = mstate->accelerators[i].row;
-					break;
+					if (mstate->options[search_row - 1] & ST_MENU_OPTION_DISABLED)
+						/* revert back, found accelerator is for disabled menu item */
+						search_row = -1;
+					else
+						break;
 				}
 			}
 
