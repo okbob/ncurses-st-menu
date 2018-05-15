@@ -46,14 +46,14 @@ extern int		debug_eventno;
 
 #endif
 
-typedef struct _ST_MENU
+typedef struct _ST_MENU_ITEM
 {
 	char	*text;						/* text of menu item, possible specify accelerator by ~ */
 	int		code;						/* code of menu item (optional) */
 	char	*shortcut;					/* shortcut text, only printed (optional) */
 	int		options;					/* locked, marked, ... (optional) */
-	struct _ST_MENU *submenu;			/* reference to nested menu (optional) */
-} ST_MENU;
+	struct _ST_MENU_ITEM *submenu;			/* reference to nested menu (optional) */
+} ST_MENU_ITEM;
 
 typedef struct
 {
@@ -89,25 +89,25 @@ typedef struct
 	int		submenu_offset_x;		/* offset for submenu related to cursor in parent menu window */
 } ST_MENU_CONFIG;
 
-struct ST_MENU_STATE;
+struct ST_MENU;
 
 extern int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn);
 
 extern void st_menu_set_desktop_panel(PANEL *pan);
-extern struct ST_MENU_STATE *st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title);
-extern struct ST_MENU_STATE *st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu);
-extern struct ST_MENU_STATE *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU *menu);
+extern struct ST_MENU *st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *items, int begin_y, int begin_x, char *title);
+extern struct ST_MENU *st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU_ITEM *items);
+extern struct ST_MENU *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM *items);
 
-extern void st_menu_post(struct ST_MENU_STATE *mstate);
-extern void st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu);
-extern bool st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent);
-extern void st_menu_delete(struct ST_MENU_STATE *mstate);
-extern void st_menu_save(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows);
-extern void st_menu_load(struct ST_MENU_STATE *mstate, int *cursor_rows);
+extern void st_menu_post(struct ST_MENU *menu);
+extern void st_menu_unpost(struct ST_MENU *menu, bool close_active_submenu);
+extern bool st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent);
+extern void st_menu_free(struct ST_MENU *menu);
+extern void st_menu_save(struct ST_MENU *menu, int *cursor_rows, int max_rows);
+extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows);
 
-extern ST_MENU *st_menu_selected_item(bool *activated);
+extern ST_MENU_ITEM *st_menu_selected_item(bool *activated);
 
-extern bool st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int option);
-extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int option);
+extern bool st_menu_set_option(struct ST_MENU *menu, int code, int option);
+extern bool st_menu_reset_option(struct ST_MENU *menu, int code, int option);
 
 #endif

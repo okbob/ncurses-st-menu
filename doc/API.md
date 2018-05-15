@@ -8,14 +8,14 @@ Interface - API
 An array of this structures is used as imput template.
 
 ```c
-typedef struct _ST_MENU
+typedef struct _ST_MENU_ITEM
 {
 	char	*text;						/* text of menu item, possible specify accelerator by ~ */
 	int	 code;						/* code of menu item (optional) */
 	char	*shortcut;					/* shortcut text, only printed (optional) */
 	int	 options;					/* locked, marked, ... (optional) */
-	struct _ST_MENU *submenu;				/* reference to nested menu (optional) */
-} ST_MENU;
+	struct _ST_MENU_ITEM *submenu;				/* reference to nested menu (optional) */
+} ST_MENU_ITEM;
 ```
 
 ### Example
@@ -30,13 +30,13 @@ ST_MENU menubar[] = {
 };
 ```
 
-## Structure `ST_MENU_STATE`
+## Structure `ST_MENU`
 
 This is opaque structure - the content is protected, that holds state data
 and some cached data used for faster visualization.
 
 ```c
-struct ST_MENU_STATE;
+struct ST_MENU;
 ```
 
 ## Structure `ST_MENU_CONFIG`
@@ -122,21 +122,21 @@ Available styles:
 extern int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn);
 extern void st_menu_set_desktop_panel(PANEL *pan);
 
-extern struct ST_MENU_STATE *st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title);
-extern struct ST_MENU_STATE *st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu);
-extern struct ST_MENU_STATE *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU *menu);
+extern struct ST_MENU *st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *items, int begin_y, int begin_x, char *title);
+extern struct ST_MENU *st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU_ITEM *items);
+extern struct ST_MENU *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM *items);
 
-extern void st_menu_post(struct ST_MENU_STATE *mstate);
-extern void st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu);
-extern bool st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent);
-extern void st_menu_delete(struct ST_MENU_STATE *mstate);
-extern void st_menu_save(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows);
-extern void st_menu_load(struct ST_MENU_STATE *mstate, int *cursor_rows);
+extern void st_menu_post(struct ST_MENU *menu);
+extern void st_menu_unpost(struct ST_MENU *menu, bool close_active_submenu);
+extern bool st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent);
+extern void st_menu_delete(struct ST_MENU *menu);
+extern void st_menu_save(struct ST_MENU *menu, int *cursor_rows, int max_rows);
+extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows);
 
 extern ST_MENU *st_menu_selected_item(bool *activated);
 
-extern bool st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int option);
-extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int option);
+extern bool st_menu_set_option(struct ST_MENU *menu, int code, int option);
+extern bool st_menu_reset_option(struct ST_MENU *menu, int code, int option);
 ```
 
 ## Description
@@ -157,7 +157,7 @@ extern bool st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int opt
 * `st_menu_driver` - main functionality - sends events to st_menu library. Any event has three
   parts - keycode, alt info (used or not used Alt key) and mouse event data.
 
-* `st_menu_delete` - remove state data of menu object from memory.
+* `st_menu_free` - remove state data of menu object from memory.
 
 * We can store menu's state data before deleting to int array. The state data can be restored
   from this array by `st_menu_load` function. When menu objects are significantly changed, then
@@ -231,19 +231,19 @@ main()
 {
 	PANEL *mainpanel;
 	ST_MENU_CONFIG  config;
-	ST_MENU		   *active_item;
-	struct ST_MENU_STATE *mstate;
+	ST_MENU_ITEM		 *active_item;
+	struct ST_MENU *menu;
 	bool	activated;
 	int		c;
 	MEVENT	mevent;
 	bool	alt;
 
-	ST_MENU _file[] = {
+	ST_MENU_ITEM _file[] = {
 		{"E~x~it", 34, "Alt-x"},
 		{NULL, -1, NULL}
 	};
 
-	ST_MENU menubar[] = {
+	ST_MENU_ITEM menubar[] = {
 		{"~F~ile", 61, NULL, 0, _file},
 		{NULL, -1, NULL}
 	};
@@ -290,10 +290,10 @@ main()
 	st_menu_set_desktop_panel(mainpanel);
 
 	/* prepare state variable for menubar */
-	mstate = st_menu_new_menubar(&config, menubar);
+	menu = st_menu_new_menubar(&config, menubar);
 
 	/* post meubar (display it) */
-	st_menu_post(mstate);
+	st_menu_post(menu);
 
 	c = get_event(&mevent, &alt);
 
@@ -303,7 +303,7 @@ main()
 	{
 		bool	processed = false;
 
-		processed = st_menu_driver(mstate, c, alt, &mevent);
+		processed = st_menu_driver(menu, c, alt, &mevent);
 
 		doupdate();
 
@@ -324,8 +324,8 @@ main()
 
 	endwin();
 
-	st_menu_unpost(mstate, true);
-	st_menu_delete(mstate);
+	st_menu_unpost(menu, true);
+	st_menu_free(menu);
 
 	return 0;
 }

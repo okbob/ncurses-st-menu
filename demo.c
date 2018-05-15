@@ -124,8 +124,8 @@ main()
 	PANEL *mainpanel;
 	ST_MENU_CONFIG  config;
 	ST_MENU_CONFIG config_b;
-	ST_MENU		   *active_item;
-	struct ST_MENU_STATE *mstate;
+	ST_MENU_ITEM	   *active_item;
+	struct ST_MENU *menu;
 	bool	activated;
 	int		c;
 	MEVENT	mevent;
@@ -141,7 +141,7 @@ main()
 			"dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia"
 			"deserunt mollit anim id est laborum.";
 
-	ST_MENU _left[] = {
+	ST_MENU_ITEM _left[] = {
 		{"~F~ile listing", 1, NULL},
 		{"~Q~uick view", 2, "C-x q"},
 		{"~I~nfo", 3, "C-x i"},
@@ -162,7 +162,7 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	ST_MENU _file[] = {
+	ST_MENU_ITEM _file[] = {
 		{"~V~iew", 15, "F3"},
 		{"Vie~w~ file...",16, NULL},
 		{"~F~iltered view", 17, "M-!"},
@@ -188,7 +188,7 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	ST_MENU _styles[] = {
+	ST_MENU_ITEM _styles[] = {
 		{"_1_Midnight black", 70},
 		{"_2_Midnight", 71},
 		{"_3_Vision", 72},
@@ -206,7 +206,7 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	ST_MENU _command[] = {
+	ST_MENU_ITEM _command[] = {
 		{"~U~ser menu", 35, "F2"},
 		{"~D~irectory tree", 36, NULL},
 		{"~F~ind file", 37, "M-?"},
@@ -232,7 +232,7 @@ main()
 		{NULL, -1, NULL}
 	};
 
-	ST_MENU menubar[] = {
+	ST_MENU_ITEM menubar[] = {
 		{"~L~eft", 60, NULL, 0, _left},
 		{"~F~ile", 61, NULL, 0, _file},
 		{"~C~ommand", 62, NULL, 0, _command},
@@ -311,10 +311,10 @@ main()
 	st_menu_set_desktop_panel(mainpanel);
 
 	/* prepare state variable for menubar */
-	mstate = st_menu_new_menubar(&config, menubar);
+	menu = st_menu_new_menubar(&config, menubar);
 
 	/* post meubar (display it) */
-	st_menu_post(mstate);
+	st_menu_post(menu);
 
 	c = get_event(&mevent, &alt);
 
@@ -340,20 +340,20 @@ main()
 
 			wnoutrefresh(stdscr);
 
-			st_menu_save(mstate, cursor_store, 1023);
+			st_menu_save(menu, cursor_store, 1023);
 
-			st_menu_delete(mstate);
-			mstate = st_menu_new_menubar2(&config,
+			st_menu_free(menu);
+			menu = st_menu_new_menubar2(&config,
 						style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 
-			st_menu_load(mstate, cursor_store);
+			st_menu_load(menu, cursor_store);
 
-			st_menu_post(mstate);
+			st_menu_post(menu);
 
 			doupdate();
 		}
 		else
-			processed = st_menu_driver(mstate, c, alt, &mevent);
+			processed = st_menu_driver(menu, c, alt, &mevent);
 
 		doupdate();
 
@@ -367,9 +367,9 @@ main()
 
 				style = active_item->code - 70;
 
-				st_menu_save(mstate, cursor_store, 1023);
+				st_menu_save(menu, cursor_store, 1023);
 
-				st_menu_delete(mstate);
+				st_menu_free(menu);
 
 				if (style == ST_MENU_STYLE_FREE_DOS)
 					fcp = st_menu_load_style(&config_b,
@@ -380,11 +380,11 @@ main()
 										style,
 										style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp);
 
-				mstate = st_menu_new_menubar2(&config, style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
+				menu = st_menu_new_menubar2(&config, style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 
-				st_menu_load(mstate, cursor_store);
+				st_menu_load(menu, cursor_store);
 
-				st_menu_post(mstate);
+				st_menu_post(menu);
 
 				refresh();
 			}
@@ -419,8 +419,8 @@ main()
 
 	endwin();
 
-	st_menu_unpost(mstate, true);
-	st_menu_delete(mstate);
+	st_menu_unpost(menu, true);
+	st_menu_free(menu);
 
 	if (requested_exit)
 		printf("exiting...\n");

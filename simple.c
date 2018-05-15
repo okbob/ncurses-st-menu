@@ -57,19 +57,19 @@ main()
 {
 	PANEL *mainpanel;
 	ST_MENU_CONFIG  config;
-	ST_MENU		   *active_item;
-	struct ST_MENU_STATE *mstate;
+	ST_MENU_ITEM		   *active_item;
+	struct ST_MENU *menu;
 	bool	activated;
 	int		c;
 	MEVENT	mevent;
 	bool	alt;
 
-	ST_MENU _file[] = {
+	ST_MENU_ITEM _file[] = {
 		{"E~x~it", 34, "Alt-x"},
 		{NULL, -1, NULL}
 	};
 
-	ST_MENU menubar[] = {
+	ST_MENU_ITEM menubar[] = {
 		{"~F~ile", 61, NULL, 0, _file},
 		{NULL, -1, NULL}
 	};
@@ -116,10 +116,10 @@ main()
 	st_menu_set_desktop_panel(mainpanel);
 
 	/* prepare state variable for menubar */
-	mstate = st_menu_new_menubar(&config, menubar);
+	menu = st_menu_new_menubar(&config, menubar);
 
 	/* post meubar (display it) */
-	st_menu_post(mstate);
+	st_menu_post(menu);
 
 	c = get_event(&mevent, &alt);
 
@@ -129,7 +129,7 @@ main()
 	{
 		bool	processed = false;
 
-		processed = st_menu_driver(mstate, c, alt, &mevent);
+		processed = st_menu_driver(menu, c, alt, &mevent);
 
 		doupdate();
 
@@ -150,8 +150,8 @@ main()
 
 	endwin();
 
-	st_menu_unpost(mstate, true);
-	st_menu_delete(mstate);
+	st_menu_unpost(menu, true);
+	st_menu_free(menu);
 
 	return 0;
 }

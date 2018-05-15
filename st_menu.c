@@ -25,9 +25,9 @@ typedef struct
 	int		row;
 } ST_MENU_ACCELERATOR;
 
-struct ST_MENU_STATE
+struct ST_MENU
 {
-	ST_MENU	   *menu;
+	ST_MENU_ITEM	   *menu_items;
 	WINDOW	   *draw_area;
 	WINDOW	   *window;
 	PANEL	   *panel;
@@ -49,11 +49,11 @@ struct ST_MENU_STATE
 	int			cols;							/* number of columns */
 	char	   *title;
 	bool		is_menubar;
-	struct ST_MENU_STATE	*active_submenu;
-	struct ST_MENU_STATE	**submenu_states;
+	struct ST_MENU	*active_submenu;
+	struct ST_MENU	**submenus;
 };
 
-static ST_MENU	   *selected_item = NULL;
+static ST_MENU_ITEM	   *selected_item = NULL;
 static bool			press_accelerator = false;
 static bool			button1_clicked = false;
 static bool			press_enter = false;
@@ -64,17 +64,17 @@ static inline int str_width(ST_MENU_CONFIG *config, char *str);
 static inline char *chr_casexfrm(ST_MENU_CONFIG *config, char *str);
 static inline int wchar_to_utf8(ST_MENU_CONFIG *config, char *str, int n, wchar_t wch);
 
-static bool _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent, bool is_top, bool is_nested_pulldown, bool *unpost_submenu);
-static void _st_menu_delete(struct ST_MENU_STATE *mstate);
+static bool _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent, bool is_top, bool is_nested_pulldown, bool *unpost_submenu);
+static void _st_menu_free(struct ST_MENU *menu);
 
 static int menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bool *extern_accel);
-static void pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
+static void pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items,
 										int *rows, int *columns, int *shortcut_x_pos, int *item_x_pos,
 										ST_MENU_ACCELERATOR *accelerators, int *naccelerators, int *first_row);
 
-static void pulldownmenu_draw_shadow(struct ST_MENU_STATE *mstate);
-static void menubar_draw(struct ST_MENU_STATE *mstate);
-static void pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top);
+static void pulldownmenu_draw_shadow(struct ST_MENU *menu);
+static void menubar_draw(struct ST_MENU *menu);
+static void pulldownmenu_draw(struct ST_MENU *menu, bool is_top);
 
 /*
  * Generic functions
@@ -215,7 +215,7 @@ wchar_to_utf8(ST_MENU_CONFIG *config, char *str, int n, wchar_t wch)
  * Workhorse for st_menu_save
  */
 static int
-_save_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows, int write_pos)
+_save_menustate(struct ST_MENU *menu, int *cursor_rows, int max_rows, int write_pos)
 {
 	int		active_row = -1;
 	int		i;
@@ -227,24 +227,24 @@ _save_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows, in
 		exit(1);
 	}
 
-	cursor_rows[write_pos++] = mstate->cursor_row;
+	cursor_rows[write_pos++] = menu->cursor_row;
 
-	if (mstate->submenu_states)
+	if (menu->submenus)
 	{
-		for (i = 0; i < mstate->nitems; i++)
+		for (i = 0; i < menu->nitems; i++)
 		{
-			if (mstate->submenu_states[i])
+			if (menu->submenus[i])
 			{
-				write_pos = _save_menustate(mstate->submenu_states[i], cursor_rows, max_rows, write_pos);
+				write_pos = _save_menustate(menu->submenus[i], cursor_rows, max_rows, write_pos);
 
-				if (mstate->active_submenu == mstate->submenu_states[i])
+				if (menu->active_submenu == menu->submenus[i])
 					active_row = i + 1;
 			}
 		}
 	}
 
-	for (i = 0; i < mstate->nitems; i++)
-		cursor_rows[write_pos++] = mstate->options[i];
+	for (i = 0; i < menu->nitems; i++)
+		cursor_rows[write_pos++] = menu->options[i];
 
 	cursor_rows[write_pos++] = active_row;
 
@@ -255,30 +255,30 @@ _save_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows, in
  * Workhorse for st_menu_load
  */
 static int
-_load_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int read_pos)
+_load_menustate(struct ST_MENU *menu, int *cursor_rows, int read_pos)
 {
 	int		active_row;
 	int		i;
 
-	mstate->cursor_row = cursor_rows[read_pos++];
+	menu->cursor_row = cursor_rows[read_pos++];
 
-	if (mstate->submenu_states)
+	if (menu->submenus)
 	{
-		for (i = 0; i < mstate->nitems; i++)
+		for (i = 0; i < menu->nitems; i++)
 		{
-			if (mstate->submenu_states[i])
+			if (menu->submenus[i])
 			{
-				read_pos = _load_menustate(mstate->submenu_states[i], cursor_rows, read_pos);
+				read_pos = _load_menustate(menu->submenus[i], cursor_rows, read_pos);
 			}
 		}
 	}
 
-	for (i = 0; i < mstate->nitems; i++)
-		mstate->options[i] = cursor_rows[read_pos++];
+	for (i = 0; i < menu->nitems; i++)
+		menu->options[i] = cursor_rows[read_pos++];
 
 	active_row = cursor_rows[read_pos++];
 	if (active_row != -1)
-		mstate->active_submenu = mstate->submenu_states[active_row - 1];
+		menu->active_submenu = menu->submenus[active_row - 1];
 
 	return read_pos;
 }
@@ -287,18 +287,18 @@ _load_menustate(struct ST_MENU_STATE *mstate, int *cursor_rows, int read_pos)
  * Serialize important fields of menustate to cursor_rows array.
  */
 void
-st_menu_save(struct ST_MENU_STATE *mstate, int *cursor_rows, int max_rows)
+st_menu_save(struct ST_MENU *menu, int *cursor_rows, int max_rows)
 {
-	_save_menustate(mstate, cursor_rows, max_rows, 0);
+	_save_menustate(menu, cursor_rows, max_rows, 0);
 }
 
 /*
  * Load cursor positions and active submenu from safe
  */
 void
-st_menu_load(struct ST_MENU_STATE *mstate, int *cursor_rows)
+st_menu_load(struct ST_MENU *menu, int *cursor_rows)
 {
-	_load_menustate(mstate, cursor_rows, 0);
+	_load_menustate(menu, cursor_rows, 0);
 }
 
 
@@ -367,7 +367,7 @@ menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bo
  * Collect display info about pulldown menu
  */
 static void
-pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
+pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items,
 								int *rows, int *columns, int *shortcut_x_pos, int *item_x_pos,
 								ST_MENU_ACCELERATOR *accelerators, int *naccelerators,
 								int *first_row)
@@ -386,12 +386,12 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 
 	*naccelerators = 0;
 
-	while (menu->text)
+	while (menu_items->text)
 	{
 		bool	extern_accel;
 
 		*rows += 1;
-		if (*menu->text && strncmp(menu->text, "--", 2) != 0)
+		if (*menu_items->text && strncmp(menu_items->text, "--", 2) != 0)
 		{
 			int text_width = 0;
 			int shortcut_width = 0;
@@ -399,7 +399,7 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 			if (*first_row == -1)
 				*first_row = *rows;
 
-			text_width = menutext_displaywidth(config, menu->text, &accelerator, &extern_accel);
+			text_width = menutext_displaywidth(config, menu_items->text, &accelerator, &extern_accel);
 
 			if (extern_accel)
 				has_extern_accel = true;
@@ -411,13 +411,13 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 				accelerators[naccel++].row = *rows;
 			}
 
-			if (menu->shortcut)
-				shortcut_width = str_width(config, menu->shortcut);
+			if (menu_items->shortcut)
+				shortcut_width = str_width(config, menu_items->shortcut);
 
-			if (menu->submenu)
+			if (menu_items->submenu)
 				shortcut_width += shortcut_width > 0 ? 2 : 1;
 
-			if (menu->options & ST_MENU_OPTION_DEFAULT && default_row == -1)
+			if (menu_items->options & ST_MENU_OPTION_DEFAULT && default_row == -1)
 				default_row = *rows;
 
 			/*
@@ -435,7 +435,7 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
 											  + (shortcut_width > 0 ? shortcut_width + 4 : 0));
 		}
 
-		menu += 1;
+		menu_items += 1;
 	}
 
 	if (config->left_alligned_shortcuts)
@@ -469,44 +469,42 @@ pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU *menu,
  * Draw menubar
  */
 static void
-menubar_draw(struct ST_MENU_STATE *mstate)
+menubar_draw(struct ST_MENU *menu)
 {
-	ST_MENU	   *menu = mstate->menu;
-	ST_MENU_CONFIG	*config = mstate->config;
-	ST_MENU *aux_menu;
+	ST_MENU_ITEM	   *menu_item = menu->menu_items;
+	ST_MENU_CONFIG	*config = menu->config;
 
 	int		i;
 
 	selected_item = NULL;
 
-	werase(mstate->window);
+	werase(menu->window);
 
-	aux_menu = menu;
 	i = 0;
-	while (aux_menu->text)
+	while (menu_item->text)
 	{
-		char	*text = aux_menu->text;
+		char	*text = menu_item->text;
 		bool	highlight = false;
-		bool	is_cursor_row = mstate->cursor_row == i + 1;
-		bool	is_disabled = aux_menu->options & ST_MENU_OPTION_DISABLED;
+		bool	is_cursor_row = menu->cursor_row == i + 1;
+		bool	is_disabled = menu_item->options & ST_MENU_OPTION_DISABLED;
 		int		current_pos;
 
 		/* bar_fields_x_pos holds x positions of menubar items */
-		current_pos = mstate->bar_fields_x_pos[i];
+		current_pos = menu->bar_fields_x_pos[i];
 
 		if (is_cursor_row)
 		{
-			wmove(mstate->window, 0, current_pos - 1);
-			wattron(mstate->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
-			waddstr(mstate->window, " ");
+			wmove(menu->window, 0, current_pos - 1);
+			wattron(menu->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+			waddstr(menu->window, " ");
 
-			selected_item = aux_menu;
+			selected_item = menu_item;
 		}
 		else
-			wmove(mstate->window, 0, current_pos);
+			wmove(menu->window, 0, current_pos);
 
 		if (is_disabled)
-			wattron(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+			wattron(menu->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
 
 		while (*text)
 		{
@@ -515,7 +513,7 @@ menubar_draw(struct ST_MENU_STATE *mstate)
 			{
 				if (text[1] == '~')
 				{
-					waddstr(mstate->window, "~");
+					waddstr(menu->window, "~");
 					text += 2;
 					continue;
 				}
@@ -524,17 +522,17 @@ menubar_draw(struct ST_MENU_STATE *mstate)
 				{
 					if (!highlight)
 					{
-						wattron(mstate->window,
+						wattron(menu->window,
 							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
 									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
 					}
 					else
 					{
-						wattroff(mstate->window,
+						wattroff(menu->window,
 							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
 									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
 						if (is_cursor_row)
-							wattron(mstate->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+							wattron(menu->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 					}
 
 					highlight = !highlight;
@@ -545,29 +543,29 @@ menubar_draw(struct ST_MENU_STATE *mstate)
 			{
 				int chlen = char_length(config, text);
 
-				waddnstr(mstate->window, text, chlen);
+				waddnstr(menu->window, text, chlen);
 				text += chlen;
 			}
 		}
 
 		if (is_cursor_row)
 		{
-			waddstr(mstate->window, " ");
-			wattroff(mstate->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+			waddstr(menu->window, " ");
+			wattroff(menu->window, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 		}
 
 		if (is_disabled)
-			wattroff(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+			wattroff(menu->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
 
-		aux_menu += 1;
+		menu_item += 1;
 		i += 1;
 	}
 
 
-	wnoutrefresh(mstate->window);
+	wnoutrefresh(menu->window);
 
-	if (mstate->active_submenu)
-		pulldownmenu_draw(mstate->active_submenu, true);
+	if (menu->active_submenu)
+		pulldownmenu_draw(menu->active_submenu, true);
 }
 
 /*
@@ -575,38 +573,38 @@ menubar_draw(struct ST_MENU_STATE *mstate)
  * where can be fully displayed.
  */
 static void
-pulldownmenu_ajust_position(struct ST_MENU_STATE *mstate, int maxy, int maxx)
+pulldownmenu_ajust_position(struct ST_MENU *menu, int maxy, int maxx)
 {
-	ST_MENU_CONFIG	*config = mstate->config;
+	ST_MENU_CONFIG	*config = menu->config;
 
 	int		y, x;
 	int		new_y, new_x;
 
-	getbegyx(mstate->window, y, x);
+	getbegyx(menu->window, y, x);
 
-	if (mstate->ideal_x_pos + mstate->cols > maxx)
+	if (menu->ideal_x_pos + menu->cols > maxx)
 	{
-		new_x = maxx - mstate->cols;
+		new_x = maxx - menu->cols;
 		if (new_x < 0)
 			new_x = 0;
 	}
 	else
-		new_x = mstate->ideal_x_pos;
+		new_x = menu->ideal_x_pos;
 
-	if (mstate->ideal_y_pos + mstate->rows > maxy)
+	if (menu->ideal_y_pos + menu->rows > maxy)
 	{
-		new_y = maxy - mstate->rows;
+		new_y = maxy - menu->rows;
 		if (new_y < 1)
 			new_y = 1;
 	}
 	else
-		new_y = mstate->ideal_y_pos;
+		new_y = menu->ideal_y_pos;
 
 	if (new_y != y || new_x != x)
 	{
 		int result;
 
-		result = move_panel(mstate->panel, new_y, new_x);
+		result = move_panel(menu->panel, new_y, new_x);
 
 		/*
 		 * move_panel fails when it cannot be displayed completly.
@@ -616,15 +614,15 @@ pulldownmenu_ajust_position(struct ST_MENU_STATE *mstate, int maxy, int maxx)
 		 * Don't try move shadow panel, when a move of menu panel
 		 * failed.
 		 */
-		if (result == OK && mstate->shadow_panel)
+		if (result == OK && menu->shadow_panel)
 		{
 			int		new_rows, new_cols;
 			int		smaxy, smaxx;
 
-			new_cols = mstate->cols - (new_x == mstate->ideal_x_pos ? 0 : config->shadow_width);
-			new_rows = mstate->rows - (maxy >= new_y + mstate->rows + 1 ? 0 : 1);
+			new_cols = menu->cols - (new_x == menu->ideal_x_pos ? 0 : config->shadow_width);
+			new_rows = menu->rows - (maxy >= new_y + menu->rows + 1 ? 0 : 1);
 
-			getmaxyx(mstate->shadow_window, smaxy, smaxx);
+			getmaxyx(menu->shadow_window, smaxy, smaxx);
 
 			if (new_cols != smaxx || new_rows != smaxy)
 			{
@@ -633,22 +631,22 @@ pulldownmenu_ajust_position(struct ST_MENU_STATE *mstate, int maxy, int maxx)
 				new_shadow_window = newwin(new_rows, new_cols, new_y + 1, new_x + config->shadow_width);
 
 				/* There are no other possibility to resize panel */
-				replace_panel(mstate->shadow_panel, new_shadow_window);
+				replace_panel(menu->shadow_panel, new_shadow_window);
 
-				delwin(mstate->shadow_window);
-				mstate->shadow_window = new_shadow_window;
+				delwin(menu->shadow_window);
+				menu->shadow_window = new_shadow_window;
 
-				wbkgd(mstate->shadow_window, COLOR_PAIR(config->menu_shadow_cpn) | config->menu_shadow_attr);
+				wbkgd(menu->shadow_window, COLOR_PAIR(config->menu_shadow_cpn) | config->menu_shadow_attr);
 
-				wnoutrefresh(mstate->shadow_window);
+				wnoutrefresh(menu->shadow_window);
 			}
 
-			move_panel(mstate->shadow_panel, new_y + 1, new_x + config->shadow_width);
+			move_panel(menu->shadow_panel, new_y + 1, new_x + config->shadow_width);
 		}
 	}
 
-	if (mstate->active_submenu)
-		pulldownmenu_ajust_position(mstate->active_submenu, maxy, maxx);
+	if (menu->active_submenu)
+		pulldownmenu_ajust_position(menu->active_submenu, maxy, maxx);
 
 	update_panels();
 }
@@ -657,49 +655,49 @@ pulldownmenu_ajust_position(struct ST_MENU_STATE *mstate, int maxy, int maxx)
  * Draw shadow
  */
 static void
-pulldownmenu_draw_shadow(struct ST_MENU_STATE *mstate)
+pulldownmenu_draw_shadow(struct ST_MENU *menu)
 {
-	ST_MENU_CONFIG	*config = mstate->config;
+	ST_MENU_CONFIG	*config = menu->config;
 
-	if (mstate->shadow_window)
+	if (menu->shadow_window)
 	{
 		int		smaxy, smaxx;
 		int		i;
 
-		getmaxyx(mstate->shadow_window, smaxy, smaxx);
+		getmaxyx(menu->shadow_window, smaxy, smaxx);
 
-		show_panel(mstate->shadow_panel);
-		top_panel(mstate->shadow_panel);
+		show_panel(menu->shadow_panel);
+		top_panel(menu->shadow_panel);
 
 		/* desktop_win must be global */
 		if (desktop_win)
-			overwrite(desktop_win, mstate->shadow_window);
+			overwrite(desktop_win, menu->shadow_window);
 		else
-			werase(mstate->shadow_window);
+			werase(menu->shadow_window);
 
 		for (i = 0; i <= smaxy; i++)
-			mvwchgat(mstate->shadow_window, i, 0, smaxx,
+			mvwchgat(menu->shadow_window, i, 0, smaxx,
 							config->menu_shadow_attr,
 							config->menu_shadow_cpn,
 							NULL);
 
-		wnoutrefresh(mstate->shadow_window);
+		wnoutrefresh(menu->shadow_window);
 	}
 
-	if (mstate->active_submenu)
-		pulldownmenu_draw_shadow(mstate->active_submenu);
+	if (menu->active_submenu)
+		pulldownmenu_draw_shadow(menu->active_submenu);
 }
 
 /*
  * pulldown menu bar draw
  */
 static void
-pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
+pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 {
-	bool	draw_box = mstate->config->draw_box;
-	ST_MENU	   *menu = mstate->menu;
-	ST_MENU_CONFIG	*config = mstate->config;
-	WINDOW	   *draw_area = mstate->draw_area;
+	bool	draw_box = menu->config->draw_box;
+	ST_MENU_ITEM	   *menu_items = menu->menu_items;
+	ST_MENU_CONFIG	*config = menu->config;
+	WINDOW	   *draw_area = menu->draw_area;
 	int		row = 1;
 	int		maxy, maxx;
 	int		text_min_x, text_max_x;
@@ -712,18 +710,18 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 
 		/* adjust positions of pulldown menus */
 		getmaxyx(stdscr, stdscr_maxy, stdscr_maxx);
-		pulldownmenu_ajust_position(mstate, stdscr_maxy, stdscr_maxx);
+		pulldownmenu_ajust_position(menu, stdscr_maxy, stdscr_maxx);
 
 		/* Draw shadows of window and all nested active pull down menu */
-		pulldownmenu_draw_shadow(mstate);
+		pulldownmenu_draw_shadow(menu);
 	}
 
-	show_panel(mstate->panel);
-	top_panel(mstate->panel);
+	show_panel(menu->panel);
+	top_panel(menu->panel);
 
 	update_panels();
 
-	werase(mstate->window);
+	werase(menu->window);
 
 	getmaxyx(draw_area, maxy, maxx);
 
@@ -736,12 +734,12 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 	text_min_x = (draw_box ? 1 : 0) + (config->extra_inner_space ? 1 : 0);
 	text_max_x = maxx - (draw_box ? 1 : 0) - (config->extra_inner_space ? 1 : 0);
 
-	while (menu->text != NULL)
+	while (menu_items->text != NULL)
 	{
-		bool	has_submenu = menu->submenu ? true : false;
-		bool	is_disabled = menu->options & ST_MENU_OPTION_DISABLED;
+		bool	has_submenu = menu_items->submenu ? true : false;
+		bool	is_disabled = menu_items->options & ST_MENU_OPTION_DISABLED;
 
-		if (*menu->text == '\0' || strncmp(menu->text, "--", 2) == 0)
+		if (*menu_items->text == '\0' || strncmp(menu_items->text, "--", 2) == 0)
 		{
 			int		i;
 
@@ -761,9 +759,9 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 		}
 		else
 		{
-			char	*text = menu->text;
+			char	*text = menu_items->text;
 			bool	highlight = false;
-			bool	is_cursor_row = mstate->cursor_row == row;
+			bool	is_cursor_row = menu->cursor_row == row;
 			bool	first_char = true;
 			bool	is_extern_accel;
 
@@ -773,17 +771,17 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 						config->cursor_attr, config->cursor_cpn, NULL);
 				wattron(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 
-				selected_item = menu;
+				selected_item = menu_items;
 			}
 
 			if (is_disabled)
-				wattron(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+				wattron(menu->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
 
 			is_extern_accel = (*text == '_' && text[1] != '_');
 
-			if (mstate->item_x_pos != 1 && !is_extern_accel)
+			if (menu->item_x_pos != 1 && !is_extern_accel)
 			{
-				wmove(draw_area, row - (draw_box ? 0 : 1), text_min_x + 1 + mstate->item_x_pos);
+				wmove(draw_area, row - (draw_box ? 0 : 1), text_min_x + 1 + menu->item_x_pos);
 			}
 			else
 				wmove(draw_area, row - (draw_box ? 0 : 1), text_min_x + 1);
@@ -840,22 +838,22 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 				first_char = false;
 			}
 
-			if (menu->shortcut != NULL)
+			if (menu_items->shortcut != NULL)
 			{
-				if (mstate->shortcut_x_pos != -1)
+				if (menu->shortcut_x_pos != -1)
 				{
-					wmove(draw_area, row - (draw_box ? 0 : 1), mstate->shortcut_x_pos + (draw_box ? 1 : 0));
+					wmove(draw_area, row - (draw_box ? 0 : 1), menu->shortcut_x_pos + (draw_box ? 1 : 0));
 				}
 				else
 				{
-					int dspl = str_width(config, menu->shortcut);
+					int dspl = str_width(config, menu_items->shortcut);
 
 					wmove(draw_area,
 							  row - (draw_box ? 0 : 1),
 							  text_max_x - dspl - 1 - (has_submenu ? 2 : 0));
 				}
 
-				waddstr(draw_area, menu->shortcut);
+				waddstr(draw_area, menu_items->shortcut);
 			}
 
 			if (has_submenu)
@@ -870,17 +868,17 @@ pulldownmenu_draw(struct ST_MENU_STATE *mstate, bool is_top)
 				wattroff(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 
 			if (is_disabled)
-				wattroff(mstate->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+				wattroff(menu->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
 		}
 
-		menu += 1;
+		menu_items += 1;
 		row += 1;
 	}
 
-	wnoutrefresh(mstate->window);
+	wnoutrefresh(menu->window);
 
-	if (mstate->active_submenu)
-		pulldownmenu_draw(mstate->active_submenu, false);
+	if (menu->active_submenu)
+		pulldownmenu_draw(menu->active_submenu, false);
 }
 
 /*
@@ -897,18 +895,18 @@ st_menu_set_desktop_panel(PANEL *pan)
  * Show menu - pull down or menu bar.
  */
 void
-st_menu_post(struct ST_MENU_STATE *mstate)
+st_menu_post(struct ST_MENU *menu)
 {
 	curs_set(0);
 	noecho();
 
-	mstate->mouse_row = -1;
+	menu->mouse_row = -1;
 
 	/* show menu */
-	if (mstate->is_menubar)
-		menubar_draw(mstate);
+	if (menu->is_menubar)
+		menubar_draw(menu);
 	else
-		pulldownmenu_draw(mstate, true);
+		pulldownmenu_draw(menu, true);
 }
 
 /*
@@ -917,21 +915,21 @@ st_menu_post(struct ST_MENU_STATE *mstate)
  * submenus.
  */
 void
-st_menu_unpost(struct ST_MENU_STATE *mstate, bool close_active_submenu)
+st_menu_unpost(struct ST_MENU *menu, bool close_active_submenu)
 {
 	/* hide active submenu */
-	if (mstate->active_submenu)
+	if (menu->active_submenu)
 	{
-		st_menu_unpost(mstate->active_submenu, close_active_submenu);
+		st_menu_unpost(menu->active_submenu, close_active_submenu);
 		if (close_active_submenu)
-			mstate->active_submenu = NULL;
+			menu->active_submenu = NULL;
 	}
 
-	mstate->mouse_row = -1;
+	menu->mouse_row = -1;
 
-	hide_panel(mstate->panel);
-	if (mstate->shadow_panel)
-		hide_panel(mstate->shadow_panel);
+	hide_panel(menu->panel);
+	if (menu->shadow_panel)
+		hide_panel(menu->shadow_panel);
 
 	update_panels();
 }
@@ -980,14 +978,14 @@ add_correction(WINDOW *s, int *y, int *x)
  * element tell to owner, close me.
  */
 static bool
-_st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
+_st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 					bool is_top, bool is_nested_pulldown,
 					bool *unpost_submenu)
 {
-	ST_MENU_CONFIG	*config = mstate->config;
+	ST_MENU_CONFIG	*config = menu->config;
 
-	int		cursor_row = mstate->cursor_row;		/* number of active menu item */
-	bool	is_menubar = mstate->is_menubar;		/* true, when processed object is menu bar */
+	int		cursor_row = menu->cursor_row;		/* number of active menu item */
+	bool	is_menubar = menu->is_menubar;		/* true, when processed object is menu bar */
 	int		first_row = -1;							/* number of row of first enabled item */
 	int		last_row = -1;			/* last menu item */
 	int		mouse_row = -1;			/* item number selected by mouse */
@@ -996,7 +994,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 	bool	post_menu = false;			/* when it is true, then assiciated pulldown menu will be posted */
 	int		row;
 	bool	processed = false;
-	ST_MENU	   *menu;
+	ST_MENU_ITEM	   *menu_items;
 
 	/* reset globals */
 	selected_item = NULL;
@@ -1010,7 +1008,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 	 * Propagate event to nested active object first. When nested object would be
 	 * closed, close it. When nested object read event, go to end
 	 */
-	if (mstate->active_submenu)
+	if (menu->active_submenu)
 	{
 		bool	_is_nested_pulldown = is_nested_pulldown ? true : (is_menubar ? false : true);
 		bool	unpost_submenu = false;
@@ -1028,13 +1026,13 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		 * Submenu cannot be top object. When now is not menu bar, then now should be
 		 * pulldown menu, and nested object should be nested pulldown menu.
 		 */
-		processed = _st_menu_driver(mstate->active_submenu, c, alt, mevent,
+		processed = _st_menu_driver(menu->active_submenu, c, alt, mevent,
 												false, _is_nested_pulldown, &unpost_submenu);
 
 		if (unpost_submenu)
 		{
-			st_menu_unpost(mstate->active_submenu, false);
-			mstate->active_submenu = NULL;
+			st_menu_unpost(menu->active_submenu, false);
+			menu->active_submenu = NULL;
 		}
 
 		/*
@@ -1070,9 +1068,9 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			 * current draw_area coordinates and expected coordinates. Then
 			 * apply this fix on mouse position.
 			 */
-			add_correction(mstate->draw_area, &y, &x);
+			add_correction(menu->draw_area, &y, &x);
 
-			if (!is_menubar && !wenclose(mstate->draw_area, y, x))
+			if (!is_menubar && !wenclose(menu->draw_area, y, x))
 			{
 				*unpost_submenu = true;
 				return false;
@@ -1126,13 +1124,13 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 					 */
 					chars_before = (config->text_space != -1) ? (config->text_space / 2) : 1;
 
-					menu = mstate->menu;
-					while (menu->text)
+					menu_items = menu->menu_items;
+					while (menu_items->text)
 					{
 						int		minx, maxx;
 
-						minx = i > 0 ? (mstate->bar_fields_x_pos[i] - chars_before) : 0;
-						maxx = mstate->bar_fields_x_pos[i + 1] - chars_before;
+						minx = i > 0 ? (menu->bar_fields_x_pos[i] - chars_before) : 0;
+						maxx = menu->bar_fields_x_pos[i + 1] - chars_before;
 
 						/* transform possitions to target menu code */
 						if (mevent->x >= minx && mevent->x < maxx)
@@ -1141,7 +1139,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 							break;
 						}
 
-						menu += 1;
+						menu_items += 1;
 						i = i + 1;
 					}
 				}
@@ -1154,17 +1152,17 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 				col = mevent->x;
 
 				/* fix mouse coordinates, if draw_area has "wrong" coordinates */
-				add_correction(mstate->draw_area, &row, &col);
+				add_correction(menu->draw_area, &row, &col);
 
 				/* calculate row from transformed mouse event */
-				if (wmouse_trafo(mstate->draw_area, &row, &col, false))
+				if (wmouse_trafo(menu->draw_area, &row, &col, false))
 						mouse_row = row + 1 - (config->draw_box ? 1:0);
 			}
 		}
 	}
 	else
 		/* there are no mouse event, reset prev mouse row */
-		mstate->mouse_row = -1;
+		menu->mouse_row = -1;
 
 	/*
 	 * Try to check if key is accelerator. This check should be on last level.
@@ -1184,7 +1182,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		 * accelerator can be alt accelerator for menuber or non alt, and
 		 * the menu should not to have active submenu.
 		 */
-		if ((!alt && !mstate->active_submenu) ||
+		if ((!alt && !menu->active_submenu) ||
 				(alt && is_menubar))
 		{
 			l_pressed = wchar_to_utf8(config, buffer, 20, (wchar_t) c);
@@ -1193,14 +1191,14 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			pressed = chr_casexfrm(config, (char *) buffer);
 			l_pressed = strlen(pressed);
 
-			for (i = 0; i < mstate->naccelerators; i++)
+			for (i = 0; i < menu->naccelerators; i++)
 			{
-				if (mstate->accelerators[i].length == l_pressed &&
-					memcmp(mstate->accelerators[i].c, pressed, l_pressed) == 0)
+				if (menu->accelerators[i].length == l_pressed &&
+					memcmp(menu->accelerators[i].c, pressed, l_pressed) == 0)
 				{
 					/* check if row is enabled */
-					search_row = mstate->accelerators[i].row;
-					if (mstate->options[search_row - 1] & ST_MENU_OPTION_DISABLED)
+					search_row = menu->accelerators[i].row;
+					if (menu->options[search_row - 1] & ST_MENU_OPTION_DISABLED)
 						/* revert back, found accelerator is for disabled menu item */
 						search_row = -1;
 					else
@@ -1220,12 +1218,12 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 	 * Iterate over menu items, and try to find next or previous row, code, or mouse
 	 * row.
 	 */
-	menu = mstate->menu; row = 1;
-	while (menu->text != 0)
+	menu_items = menu->menu_items; row = 1;
+	while (menu_items->text != 0)
 	{
-		if (*menu->text != '\0' &&
-				(strncmp(menu->text, "--", 2) != 0) &&
-				((mstate->options[row - 1] & ST_MENU_OPTION_DISABLED) == 0))
+		if (*menu_items->text != '\0' &&
+				(strncmp(menu_items->text, "--", 2) != 0) &&
+				((menu->options[row - 1] & ST_MENU_OPTION_DISABLED) == 0))
 		{
 			if (first_row == -1)
 			{
@@ -1233,7 +1231,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 
 				if (c == KEY_HOME && !is_menubar)
 				{
-					mstate->cursor_row = first_row;
+					menu->cursor_row = first_row;
 					found_row = true;
 					processed = true;
 					break;
@@ -1244,7 +1242,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			{
 				if (c == KEY_RIGHT && row > cursor_row) 
 				{
-					mstate->cursor_row = row;
+					menu->cursor_row = row;
 					found_row = true;
 					processed = true;
 					break;
@@ -1253,7 +1251,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 				{
 					if (last_row != -1)
 					{
-						mstate->cursor_row = last_row;
+						menu->cursor_row = last_row;
 						found_row = true;
 						processed = true;
 						break;
@@ -1265,7 +1263,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 				/* Is not menubar */
 				if (c == KEY_DOWN && row > cursor_row)
 				{
-					mstate->cursor_row = row;
+					menu->cursor_row = row;
 					processed = true;
 					found_row = true;
 					break;
@@ -1274,7 +1272,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 				{
 					if (last_row != -1)
 					{
-						mstate->cursor_row = last_row;
+						menu->cursor_row = last_row;
 						found_row = true;
 						processed = true;
 						break;
@@ -1286,14 +1284,14 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 
 			if (mouse_row != -1 && row == mouse_row)
 			{
-				mstate->cursor_row = row;
+				menu->cursor_row = row;
 				found_row = true;
 				processed = true;
 				post_menu = true;
 
 				if (mevent->bstate & BUTTON1_PRESSED)
 				{
-					mstate->mouse_row = mouse_row;
+					menu->mouse_row = mouse_row;
 				}
 				else
 				{
@@ -1303,17 +1301,17 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 					 * and released row is same.
 					 */
 					if (mevent->bstate& BUTTON1_RELEASED &&
-							mstate->mouse_row == mouse_row)
+							menu->mouse_row == mouse_row)
 					{
 						button1_clicked = true;
 					}
-					mstate->mouse_row = -1;
+					menu->mouse_row = -1;
 				}
 				break;
 			}
 			else if (search_row != -1 && row == search_row)
 			{
-				mstate->cursor_row = row;
+				menu->cursor_row = row;
 				press_accelerator = true;
 
 				found_row = true;
@@ -1324,7 +1322,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 
 			last_row = row;
 		}
-		menu += 1;
+		menu_items += 1;
 		row += 1;
 	}
 
@@ -1338,12 +1336,12 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		{
 			if (c == KEY_RIGHT)
 			{
-				mstate->cursor_row = first_row;
+				menu->cursor_row = first_row;
 				processed = true;
 			}
 			else if (c == KEY_LEFT)
 			{
-				mstate->cursor_row = last_row;
+				menu->cursor_row = last_row;
 				processed = true;
 			}
 		}
@@ -1351,29 +1349,29 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		{
 			if (c == KEY_END)
 			{
-				mstate->cursor_row = last_row;
+				menu->cursor_row = last_row;
 				processed = true;
 			}
 			else if (c == KEY_DOWN)
 			{
-				mstate->cursor_row = first_row;
+				menu->cursor_row = first_row;
 				processed = true;
 			}
 		}
 	}
 
 	/* when menubar is changed, unpost active pulldown submenu */
-	if (mstate->active_submenu && cursor_row != mstate->cursor_row)
+	if (menu->active_submenu && cursor_row != menu->cursor_row)
 	{
-		st_menu_unpost(mstate->active_submenu, false);
-		mstate->active_submenu = NULL;
+		st_menu_unpost(menu->active_submenu, false);
+		menu->active_submenu = NULL;
 
 		/* remember, submenu was visible */
 		post_menu = true;
 	}
 
 	/* enter has sense only on selectable menu item */
-	if (c == 10 && mstate->cursor_row != -1)
+	if (c == 10 && menu->cursor_row != -1)
 		press_enter = true;
 
 	/*
@@ -1385,8 +1383,8 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 			  (c == KEY_RIGHT && !is_menubar) ||
 			  c == 10 || post_menu)
 	{
-		mstate->active_submenu = mstate->submenu_states[mstate->cursor_row - 1];
-		if (mstate->active_submenu)
+		menu->active_submenu = menu->submenus[menu->cursor_row - 1];
+		if (menu->active_submenu)
 		{
 			/* when submenu is active, then reset accelerator and mouse flags */
 			press_accelerator = false;
@@ -1402,7 +1400,7 @@ _st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent,
 		if (press_accelerator || c == 10)
 			processed = true;
 		else
-			processed = mstate->active_submenu != NULL;
+			processed = menu->active_submenu != NULL;
 	}
 
 	/*
@@ -1420,67 +1418,67 @@ draw_object:
 	 */
 	if (is_top)
 	{
-		if (mstate->is_menubar)
-			menubar_draw(mstate);
+		if (menu->is_menubar)
+			menubar_draw(menu);
 		else
-			pulldownmenu_draw(mstate, true);
+			pulldownmenu_draw(menu, true);
 	}
 
 	return processed;
 }
 
 bool
-st_menu_driver(struct ST_MENU_STATE *mstate, int c, bool alt, MEVENT *mevent)
+st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 {
 	bool aux_unpost_submenu = false;
 
-	return _st_menu_driver(mstate, c, alt, mevent, true, false, &aux_unpost_submenu);
+	return _st_menu_driver(menu, c, alt, mevent, true, false, &aux_unpost_submenu);
 }
 
 /*
- * Create state variable for pulldown menu. It based on template - a array of ST_MENU fields.
+ * Create state variable for pulldown menu. It based on template - a array of ST_MENU_ITEM fields.
  * The initial position can be specified. The config (specify desplay properties) should be
  * passed. The config can be own or preloaded from preddefined styles by function st_menu_load_style.
  * a title is not supported yet.
  */
-struct ST_MENU_STATE *
-st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, char *title)
+struct ST_MENU *
+st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items, int begin_y, int begin_x, char *title)
 {
-	struct ST_MENU_STATE *mstate;
+	struct ST_MENU *menu;
 	int		rows, cols;
-	ST_MENU *aux_menu;
+	ST_MENU_ITEM *menu_item;
 	int		menu_fields = 0;
 	int		i;
 
-	mstate = safe_malloc(sizeof(struct ST_MENU_STATE));
+	menu = safe_malloc(sizeof(struct ST_MENU));
 
-	mstate->menu = menu;
-	mstate->config = config;
-	mstate->title = title;
-	mstate->naccelerators = 0;
-	mstate->is_menubar = false;
-	mstate->mouse_row = -1;
+	menu->menu_items = menu_items;
+	menu->config = config;
+	menu->title = title;
+	menu->naccelerators = 0;
+	menu->is_menubar = false;
+	menu->mouse_row = -1;
 
 	/* how much items are in template */
-	aux_menu = menu;
-	while (aux_menu->text != NULL)
+	menu_item = menu_items;
+	while (menu_item->text != NULL)
 	{
 		menu_fields += 1;
-		aux_menu += 1;
+		menu_item += 1;
 	}
 
 	/* preallocate good enough memory */
-	mstate->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
-	mstate->submenu_states = safe_malloc(sizeof(struct ST_MENU_STATE) * menu_fields);
-	mstate->options = safe_malloc(sizeof(int) * menu_fields);
+	menu->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
+	menu->submenus = safe_malloc(sizeof(struct ST_MENU) * menu_fields);
+	menu->options = safe_malloc(sizeof(int) * menu_fields);
 
-	mstate->nitems = menu_fields;
+	menu->nitems = menu_fields;
 
 	/* get pull down menu dimensions */
-	pulldownmenu_content_size(config, menu, &rows, &cols,
-							&mstate->shortcut_x_pos, &mstate->item_x_pos,
-							mstate->accelerators, &mstate->naccelerators,
-							&mstate->cursor_row);
+	pulldownmenu_content_size(config, menu_items, &rows, &cols,
+							&menu->shortcut_x_pos, &menu->item_x_pos,
+							menu->accelerators, &menu->naccelerators,
+							&menu->cursor_row);
 
 	if (config->draw_box)
 	{
@@ -1496,41 +1494,41 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 	/* Prepare property for menu shadow */
 	if (config->shadow_width > 0)
 	{
-		mstate->shadow_window = newwin(rows, cols, begin_y + 1, begin_x + config->shadow_width);
-		mstate->shadow_panel = new_panel(mstate->shadow_window);
+		menu->shadow_window = newwin(rows, cols, begin_y + 1, begin_x + config->shadow_width);
+		menu->shadow_panel = new_panel(menu->shadow_window);
 
-		hide_panel(mstate->shadow_panel);
-		wbkgd(mstate->shadow_window, COLOR_PAIR(config->menu_shadow_cpn) | config->menu_shadow_attr);
+		hide_panel(menu->shadow_panel);
+		wbkgd(menu->shadow_window, COLOR_PAIR(config->menu_shadow_cpn) | config->menu_shadow_attr);
 
-		wnoutrefresh(mstate->shadow_window);
+		wnoutrefresh(menu->shadow_window);
 	}
 	else
 	{
-		mstate->shadow_window = NULL;
-		mstate->shadow_panel = NULL;
+		menu->shadow_window = NULL;
+		menu->shadow_panel = NULL;
 	}
 
-	mstate->window = newwin(rows, cols, begin_y, begin_x);
+	menu->window = newwin(rows, cols, begin_y, begin_x);
 
-	mstate->ideal_y_pos = begin_y;
-	mstate->ideal_x_pos = begin_x;
-	mstate->rows = rows;
-	mstate->cols = cols;
+	menu->ideal_y_pos = begin_y;
+	menu->ideal_x_pos = begin_x;
+	menu->rows = rows;
+	menu->cols = cols;
 
-	wbkgd(mstate->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
-	wnoutrefresh(mstate->window);
+	wbkgd(menu->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
+	wnoutrefresh(menu->window);
 
 	/*
 	 * Initialize submenu states (nested submenus)
 	 */
-	aux_menu = menu;
+	menu_item = menu_items;
 	i = 0;
-	while (aux_menu->text)
+	while (menu_item->text)
 	{
-		if (aux_menu->submenu)
+		if (menu_item->submenu)
 		{
-			mstate->submenu_states[i] = 
-					st_menu_new(config, aux_menu->submenu,
+			menu->submenus[i] = 
+					st_menu_new(config, menu_item->submenu,
 										begin_y + i + config->submenu_offset_y
 										+ (config->draw_box ? 1 : 0)
 										+ (config->wide_vborders ? 1 : 0),
@@ -1538,45 +1536,45 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU *menu, int begin_y, int begin_x, cha
 										NULL);
 		}
 		else
-			mstate->submenu_states[i] = NULL;
+			menu->submenus[i] = NULL;
 
-		mstate->options[i] = aux_menu->options;
+		menu->options[i] = menu_item->options;
 
-		aux_menu += 1;
+		menu_item += 1;
 		i += 1;
 	}
 
 	/* draw area can be same like window or smaller */
 	if (config->wide_vborders || config->wide_hborders)
 	{
-		mstate->draw_area = derwin(mstate->window,
+		menu->draw_area = derwin(menu->window,
 			rows - (config->wide_hborders ? 2 : 0),
 			cols - (config->wide_vborders ? 2 : 0),
 			config->wide_hborders ? 1 : 0,
 			config->wide_vborders ? 1 : 0);
 
-		wbkgd(mstate->draw_area, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
+		wbkgd(menu->draw_area, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
 
-		wnoutrefresh(mstate->draw_area);
+		wnoutrefresh(menu->draw_area);
 	}
 	else
-		mstate->draw_area = mstate->window;
+		menu->draw_area = menu->window;
 
-	mstate->panel = new_panel(mstate->window);
-	hide_panel(mstate->panel);
+	menu->panel = new_panel(menu->window);
+	hide_panel(menu->panel);
 
-	return mstate;
+	return menu;
 }
 
 /*
- * Create state variable for menubar based on template (array) of ST_MENU
+ * Create state variable for menubar based on template (array) of ST_MENU_ITEM
  */
 struct
-ST_MENU_STATE *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU *menu)
+ST_MENU *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM *menu_items)
 {
-	struct ST_MENU_STATE *mstate;
+	struct ST_MENU *menu;
 	int		maxy, maxx;
-	ST_MENU *aux_menu;
+	ST_MENU_ITEM *menu_item;
 	int		menu_fields = 0;
 	int		aux_width = 0;
 	int		text_space;
@@ -1592,46 +1590,46 @@ ST_MENU_STATE *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcf
 	/* by compiler quiet */
 	(void) maxy;
 
-	mstate = safe_malloc(sizeof(struct ST_MENU_STATE));
+	menu = safe_malloc(sizeof(struct ST_MENU));
 
-	mstate->window = newwin(1, maxx, 0, 0);
-	mstate->panel = new_panel(mstate->window);
+	menu->window = newwin(1, maxx, 0, 0);
+	menu->panel = new_panel(menu->window);
 
 	/* there are not shadows */
-	mstate->shadow_window = NULL;
-	mstate->shadow_panel = NULL;
+	menu->shadow_window = NULL;
+	menu->shadow_panel = NULL;
 
-	mstate->config = barcfg;
-	mstate->menu = menu;
-	mstate->cursor_row = 1;
-	mstate->active_submenu = NULL;
+	menu->config = barcfg;
+	menu->menu_items = menu_items;
+	menu->cursor_row = 1;
+	menu->active_submenu = NULL;
 
-	mstate->is_menubar = true;
-	mstate->mouse_row = -1;
+	menu->is_menubar = true;
+	menu->mouse_row = -1;
 
-	wbkgd(mstate->window, COLOR_PAIR(barcfg->menu_background_cpn) | barcfg->menu_background_attr);
+	wbkgd(menu->window, COLOR_PAIR(barcfg->menu_background_cpn) | barcfg->menu_background_attr);
 
-	aux_menu = menu;
-	while (aux_menu->text)
+	menu_item = menu_items;
+	while (menu_item->text)
 	{
 		menu_fields += 1;
 
 		if (barcfg->text_space == -1)
-			aux_width += menutext_displaywidth(barcfg, aux_menu->text, NULL, NULL);
+			aux_width += menutext_displaywidth(barcfg, menu_item->text, NULL, NULL);
 
-		aux_menu += 1;
+		menu_item += 1;
 	}
 
 	/*
 	 * last bar position is hypotetical - we should not to calculate length of last field
 	 * every time.
 	 */
-	mstate->bar_fields_x_pos = safe_malloc(sizeof(int) * (menu_fields + 1));
-	mstate->submenu_states = safe_malloc(sizeof(struct ST_MENU_STATE) * menu_fields);
-	mstate->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
-	mstate->options = safe_malloc(sizeof(int) * menu_fields);
+	menu->bar_fields_x_pos = safe_malloc(sizeof(int) * (menu_fields + 1));
+	menu->submenus = safe_malloc(sizeof(struct ST_MENU) * menu_fields);
+	menu->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
+	menu->options = safe_malloc(sizeof(int) * menu_fields);
 
-	mstate->nitems = menu_fields;
+	menu->nitems = menu_fields;
 
 	/*
 	 * When text_space is not defined, then try to vallign menu items
@@ -1652,94 +1650,94 @@ ST_MENU_STATE *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcf
 	}
 
 	/* Initialize submenu */
-	aux_menu = menu; i = 0;
-	while (aux_menu->text)
+	menu_item = menu_items; i = 0;
+	while (menu_item->text)
 	{
 		char	*accelerator;
 
-		mstate->bar_fields_x_pos[i] = current_pos;
-		current_pos += menutext_displaywidth(barcfg, aux_menu->text, &accelerator, NULL);
+		menu->bar_fields_x_pos[i] = current_pos;
+		current_pos += menutext_displaywidth(barcfg, menu_item->text, &accelerator, NULL);
 		current_pos += text_space;
-		if (aux_menu->submenu)
+		if (menu_item->submenu)
 		{
-			mstate->submenu_states[i] = 
-					st_menu_new(pdcfg, aux_menu->submenu,
-										1, mstate->bar_fields_x_pos[i] + 
+			menu->submenus[i] = 
+					st_menu_new(pdcfg, menu_item->submenu,
+										1, menu->bar_fields_x_pos[i] + 
 										pdcfg->menu_bar_menu_offset
 										- (pdcfg->draw_box ? 1 : 0)
 										- (pdcfg->wide_vborders ? 1 : 0)
 										- (pdcfg->extra_inner_space ? 1 : 0) - 1, NULL);
 		}
 		else
-			mstate->submenu_states[i] = NULL;
+			menu->submenus[i] = NULL;
 
 		if (accelerator)
 		{
-			mstate->accelerators[naccel].c = chr_casexfrm(barcfg, accelerator);
-			mstate->accelerators[naccel].length = strlen(mstate->accelerators[naccel].c);
-			mstate->accelerators[naccel++].row = i + 1;
+			menu->accelerators[naccel].c = chr_casexfrm(barcfg, accelerator);
+			menu->accelerators[naccel].length = strlen(menu->accelerators[naccel].c);
+			menu->accelerators[naccel++].row = i + 1;
 		}
 
-		mstate->naccelerators = naccel;
+		menu->naccelerators = naccel;
 
-		mstate->options[i] = aux_menu->options;
+		menu->options[i] = menu_item->options;
 
-		aux_menu += 1;
+		menu_item += 1;
 		i += 1;
 	}
 
 	/*
 	 * store hypotetical x bar position
 	 */
-	mstate->bar_fields_x_pos[i] = current_pos;
+	menu->bar_fields_x_pos[i] = current_pos;
 
-	return mstate;
+	return menu;
 }
 
-struct ST_MENU_STATE *
-st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU *menu)
+struct ST_MENU *
+st_menu_new_menubar(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items)
 {
-	return st_menu_new_menubar2(config, NULL, menu);
+	return st_menu_new_menubar2(config, NULL, menu_items);
 }
 
 /*
  * Remove all objects allocated by menu and nested objects
- * it is workhorse for st_menu_delete
+ * it is workhorse for st_menu_free
  */
 static void
-_st_menu_delete(struct ST_MENU_STATE *mstate)
+_st_menu_free(struct ST_MENU *menu)
 {
 	int		i;
 
-	if (mstate)
+	if (menu)
 	{
-		if (mstate->submenu_states)
+		if (menu->submenus)
 		{
-			for (i = 0; i < mstate->nitems; i++)
-				st_menu_delete(mstate->submenu_states[i]);
+			for (i = 0; i < menu->nitems; i++)
+				st_menu_free(menu->submenus[i]);
 
-			free(mstate->submenu_states);
+			free(menu->submenus);
 		}
 
-		if (mstate->accelerators)
-			free(mstate->accelerators);
+		if (menu->accelerators)
+			free(menu->accelerators);
 
-		if (mstate->shadow_panel)
-			del_panel(mstate->shadow_panel);
-		if (mstate->shadow_window)
-			delwin(mstate->shadow_window);
+		if (menu->shadow_panel)
+			del_panel(menu->shadow_panel);
+		if (menu->shadow_window)
+			delwin(menu->shadow_window);
 
-		del_panel(mstate->panel);
-		delwin(mstate->window);
+		del_panel(menu->panel);
+		delwin(menu->window);
 
-		free(mstate);
+		free(menu);
 	}
 }
 
 void
-st_menu_delete(struct ST_MENU_STATE *mstate)
+st_menu_free(struct ST_MENU *menu)
 {
-	_st_menu_delete(mstate);
+	_st_menu_free(menu);
 
 	update_panels();
 }
@@ -1747,7 +1745,7 @@ st_menu_delete(struct ST_MENU_STATE *mstate)
 /*
  * Returns active item and info about selecting of active item
  */
-ST_MENU *
+ST_MENU_ITEM *
 st_menu_selected_item(bool *activated)
 {
 	/*
@@ -1765,24 +1763,24 @@ st_menu_selected_item(bool *activated)
  * Set flag of first menu item specified by code
  */
 bool
-st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int option)
+st_menu_set_option(struct ST_MENU *menu, int code, int option)
 {
-	ST_MENU *menu = mstate->menu;
+	ST_MENU_ITEM *menu_items = menu->menu_items;
 	int		i = 0;
 
-	while (menu->text)
+	while (menu_items->text)
 	{
-		if (menu->code == code)
+		if (menu_items->code == code)
 		{
-			mstate->options[i] |= option;
+			menu->options[i] |= option;
 			return true;
 		}
 
-		if (mstate->submenu_states[i])
-			if (st_menu_set_option(mstate->submenu_states[i], code, option))
+		if (menu->submenus[i])
+			if (st_menu_set_option(menu->submenus[i], code, option))
 				return true;
 
-		menu += 1;
+		menu_items += 1;
 		i += 1;
 	}
 
@@ -1793,24 +1791,24 @@ st_menu_set_option(struct ST_MENU_STATE *mstate, int code, int option)
  * Reset flag of first menu item specified by code
  */
 bool
-st_menu_reset_option(struct ST_MENU_STATE *mstate, int code, int option)
+st_menu_reset_option(struct ST_MENU *menu, int code, int option)
 {
-	ST_MENU *menu = mstate->menu;
+	ST_MENU_ITEM *menu_items = menu->menu_items;
 	int		i = 0;
 
-	while (menu->text)
+	while (menu_items->text)
 	{
-		if (menu->code == code)
+		if (menu_items->code == code)
 		{
-			mstate->options[i] &= ~option;
+			menu->options[i] &= ~option;
 			return true;
 		}
 
-		if (mstate->submenu_states[i])
-			if (st_menu_set_option(mstate->submenu_states[i], code, option))
+		if (menu->submenus[i])
+			if (st_menu_set_option(menu->submenus[i], code, option))
 				return true;
 
-		menu += 1;
+		menu_items += 1;
 		i += 1;
 	}
 
