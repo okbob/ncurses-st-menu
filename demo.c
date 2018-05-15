@@ -243,8 +243,8 @@ main()
 #ifdef DEBUG_PIPE
 
 	debug_pipe = fopen(DEBUG_PIPE, "w");
+	setlinebuf(debug_pipe);
 	fprintf(debug_pipe, "demo application start\n");
-	fflush(debug_pipe);
 
 #endif
 
