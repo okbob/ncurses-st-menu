@@ -110,7 +110,7 @@ Available styles:
 #define ST_MENU_STYLE_TURBO		10
 #define ST_MENU_STYLE_PDMENU		11
 #define ST_MENU_STYLE_OLD_TURBO		12
-#define ST_MENU_STYLE_FREE_DOS		13		/* menubar style */
+#define ST_MENU_STYLE_FREE_DOS		13	/* menubar style */
 #define ST_MENU_STYLE_FREE_DOS_P	14	/* pulldown menu style */
 ```
 
@@ -129,7 +129,7 @@ extern struct ST_MENU *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONF
 extern void st_menu_post(struct ST_MENU *menu);
 extern void st_menu_unpost(struct ST_MENU *menu, bool close_active_submenu);
 extern bool st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent);
-extern void st_menu_delete(struct ST_MENU *menu);
+extern void st_menu_free(struct ST_MENU *menu);
 extern void st_menu_save(struct ST_MENU *menu, int *cursor_rows, int max_rows);
 extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows);
 
