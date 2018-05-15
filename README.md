@@ -1,6 +1,6 @@
 # ncurses-st-menu 
 
-ncurses based library for CUA look menu
+modern and simple ncurses based library for CUA look menu
 
 I didn't find any library for Unix terminal applications for creating pull down and menu bar menus. 
 My short target is library for menu with midnight commander look. The origin ncurses menu are not designed
@@ -29,7 +29,7 @@ It does only pulldown menus and menubars, nothing else. It is not complex framew
   created by functions `st_menu_new` or `st_menu_new_menubar`. A function `st_menu_post`
   displays menu, and function `st_menu_unpost` hides menu. Any event can be processed
   in menu library by function `st_menu_driver` and menu can be removed by function 
-  `st_menu_delete`.
+  `st_menu_free`.
 
 # Screenshots
 
