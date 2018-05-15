@@ -111,7 +111,7 @@ Available styles:
 #define ST_MENU_STYLE_PDMENU		11
 #define ST_MENU_STYLE_OLD_TURBO		12
 #define ST_MENU_STYLE_FREE_DOS		13		/* menubar style */
-#define ST_MENU_STYLE_FREE_DOS_P		14	/* pulldown menu style */
+#define ST_MENU_STYLE_FREE_DOS_P	14	/* pulldown menu style */
 ```
 
 # Functions
