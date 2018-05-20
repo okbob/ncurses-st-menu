@@ -612,8 +612,6 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->shadow_width = 1;
 
 			break;
-
-
 	}
 
 	return start_from_cpn;
