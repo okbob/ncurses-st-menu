@@ -203,8 +203,12 @@ main()
 		{"_p_Pdmenu", 81, NULL, ST_MENU_OPTION_DEFAULT},
 		{"_o_Old Turbo", 82},
 		{"_f_Free Dos", 83},
+		{"_m_Midnight46", 84},
 		{NULL, -1, NULL}
 	};
+
+#define FIRST_THEME_CODE		70
+#define LAST_THEME_CODE			84
 
 	ST_MENU_ITEM _command[] = {
 		{"~U~ser menu", 35, "F2"},
@@ -360,12 +364,15 @@ main()
 		active_item = st_menu_selected_item(&activated);
 		if (processed && activated)
 		{
-			if (active_item->code >= 70 && active_item->code <= 83)
+			if (active_item->code >= FIRST_THEME_CODE && active_item->code <= LAST_THEME_CODE)
 			{
 				int		cursor_store[1024];
 				int		fcp = 2;
 
 				style = active_item->code - 70;
+				/* ST_MENU_STYLE_FREE_DOS requires two slots */
+				if (style > ST_MENU_STYLE_FREE_DOS)
+					style += 1;
 
 				st_menu_save(menu, cursor_store, 1023);
 
