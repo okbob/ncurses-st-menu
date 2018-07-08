@@ -20,7 +20,6 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 	switch (style)
 	{
 		case ST_MENU_STYLE_MCB:
-			use_default_colors();
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
@@ -355,7 +354,6 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			break;
 
 		case ST_MENU_STYLE_NOCOLOR:
-			use_default_colors();
 			config->menu_background_cpn = 0;
 			config->menu_background_attr = 0;
 
@@ -388,7 +386,6 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			break;
 
 		case ST_MENU_STYLE_ONECOLOR:
-			use_default_colors();
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
 

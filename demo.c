@@ -412,6 +412,12 @@ main()
 
 				st_menu_free(menu);
 
+				/* Better to start using default colors in applications instead in lib */
+				if (style == ST_MENU_STYLE_ONECOLOR ||
+						style == ST_MENU_STYLE_NOCOLOR ||
+						style == ST_MENU_STYLE_MCB)
+					use_default_colors();
+
 				if (style == ST_MENU_STYLE_FREE_DOS)
 					fcp = st_menu_load_style(&config_b,
 												ST_MENU_STYLE_FREE_DOS_P,
