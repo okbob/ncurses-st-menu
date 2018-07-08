@@ -265,7 +265,17 @@ main()
 
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
+
+#ifdef LIBUNISTRING
+
 	config.language = uc_locale_language();
+
+#else
+
+	config.language = NULL;
+
+#endif
+
 	config.force8bit = strcmp(config.encoding, "UTF-8") != 0;
 
 	initscr();

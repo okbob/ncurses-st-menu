@@ -5,10 +5,20 @@
 #include <string.h>
 #include <wchar.h>
 
+#ifdef LIBUNISTRING
+
 /* libunistring */
 #include <unicase.h>
 #include <unistr.h>
 #include <uniwidth.h>
+
+#else
+
+/* Alternative minimalistic own unicode support */
+
+#include "unicode.h"
+
+#endif
 
 #include "st_menu.h"
 
@@ -127,7 +137,16 @@ char_length(ST_MENU_CONFIG *config, const char *c)
 		 * This functionality can be enhanced to check real size
 		 * of utf8 string.
 		 */
+#ifdef LIBUNISTRING
+
 		result = u8_mblen((const uint8_t *) c, 4);
+
+#else
+
+		result = utf8charlen(*((char *) c));
+
+#endif
+
 		if (result > 0)
 			return result;
 	}
@@ -142,7 +161,15 @@ static inline int
 char_width(ST_MENU_CONFIG *config, char *c, int bytes)
 {
 	if (!config->force8bit)
+#ifdef LIBUNISTRING
+
 		return u8_width((const uint8_t *) c, 1, config->encoding);
+
+#else
+
+		return utf_dsplen((const char *) c);
+
+#endif
 
 	return 1;
 }
@@ -154,7 +181,15 @@ static inline int
 str_width(ST_MENU_CONFIG *config, char *str)
 {
 	if (!config->force8bit)
+#ifdef LIBUNISTRING
+
 		return u8_strwidth((const uint8_t *) str, config->encoding);
+
+#else
+
+		return utf_string_dsplen((const char *) str, strlen(str));
+
+#endif
 
 	return strlen(str);
 }
@@ -167,10 +202,13 @@ chr_casexfrm(ST_MENU_CONFIG *config, char *str)
 {
 	char	buffer[20];
 	char   *result;
-	size_t	length;
 
 	if (!config->force8bit)
 	{
+#ifdef LIBUNISTRING
+
+	size_t	length;
+
 		length = sizeof(buffer);
 		result = u8_casexfrm((const uint8_t *) str,
 								char_length(config, str),
@@ -178,6 +216,17 @@ chr_casexfrm(ST_MENU_CONFIG *config, char *str)
 									buffer, &length);
 		if (result == buffer)
 			result = strdup(buffer);
+
+#else
+
+		int	fold = utf8_tofold((const char *) str);
+
+		*((int *) buffer) = fold;
+		buffer[sizeof(int)] = '\0';
+
+		result = strdup(buffer);
+
+#endif
 	}
 	else
 	{
@@ -200,7 +249,16 @@ wchar_to_utf8(ST_MENU_CONFIG *config, char *str, int n, wchar_t wch)
 
 	if (!config->force8bit)
 	{
+#ifdef LIBUNISTRING
+
 		result = u8_uctomb((uint8_t *) str, (ucs4_t) wch, n);
+
+#else
+
+		char *ptr = (char *) unicode_to_utf8(wch, (unsigned char *) str);
+		result = ptr - str;
+
+#endif
 	}
 	else
 	{
