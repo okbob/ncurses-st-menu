@@ -8,6 +8,8 @@
 
 #include "st_menu.h"
 
+//#define DEBUG_PIPE "/home/pavel/debug"
+
 #ifdef DEBUG_PIPE
 
 /*
@@ -133,6 +135,13 @@ main()
 	bool	alt;
 	bool	requested_exit = false;
 	int		style = 10;
+
+	WINDOW *w1 = NULL;
+	WINDOW *w2 = NULL;
+	WINDOW *w3 = NULL;
+	WINDOW *w4 = NULL;
+
+	WINDOW **bgwins[4] = {&w1, &w2, &w3, &w4};
 
 	const char *demo = 
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore "
@@ -294,13 +303,28 @@ main()
 
 	/* prepare main window */
 	getmaxyx(stdscr, maxy, maxx);
-	wbkgd(stdscr, COLOR_PAIR(1));
 
-	for (i = 0; i <= maxy; i++)
+	w1 = subwin(stdscr, 4, 10, 0, 0);
+	w2 = subwin(stdscr, 4, maxx - 10, 0, 10);
+	w3 = subwin(stdscr, maxy - 4, 10, 4, 0);
+	w4 = subwin(stdscr, maxy - 4, maxx - 10, 4, 10);
+
+	for (i = 0; i < 4; i++)
 	{
-		wmove(stdscr, i, 0);
+		WINDOW *w = *bgwins[i];
+		int		j;
 
-		waddnstr(stdscr, demo + i , maxx);
+		wbkgd(w, COLOR_PAIR(1));
+
+		getmaxyx(w, maxy, maxx);
+
+		for (j = 0; j < maxy; j++)
+		{
+			wmove(w, j, 0);
+			waddnstr(w, demo + j , maxx);
+		}
+
+		wrefresh(w);
 	}
 
 	wrefresh(stdscr);
