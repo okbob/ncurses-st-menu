@@ -8,7 +8,9 @@
 
 #include "st_menu.h"
 
-//#define DEBUG_PIPE "/home/pavel/debug"
+/*
+ * #define DEBUG_PIPE "/home/pavel/debug"
+ */
 
 #ifdef DEBUG_PIPE
 

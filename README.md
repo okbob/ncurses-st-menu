@@ -216,7 +216,7 @@ main()
 
 # Dependency
 
-* libunistring - LGPL Unicode library
+* optional libunistring - LGPL Unicode library
 
 * define NCURSES_WIDECHAR when wide char ncurses support is available.
 
