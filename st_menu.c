@@ -802,6 +802,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 	{
 		bool	has_submenu = menu_items->submenu ? true : false;
 		bool	is_disabled = menu_items->options & ST_MENU_OPTION_DISABLED;
+		bool	is_marked = menu_items->options & ST_MENU_OPTION_MARKED;
 
 		if (*menu_items->text == '\0' || strncmp(menu_items->text, "--", 2) == 0)
 		{
@@ -926,6 +927,14 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 								row - (draw_box ? 0 : 1),
 								text_max_x - 2,
 									"%lc", config->submenu_tag);
+			}
+
+			if (is_marked)
+			{
+				mvwprintw(draw_area,
+								row - (draw_box ? 0 : 1),
+								text_min_x,
+									"%lc", config->mark_tag);
 			}
 
 			if (is_cursor_row)

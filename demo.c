@@ -153,7 +153,7 @@ main()
 			"deserunt mollit anim id est laborum.";
 
 	ST_MENU_ITEM _left[] = {
-		{"~F~ile listing", 1, NULL},
+		{"~F~ile listing", 1, NULL, ST_MENU_OPTION_MARKED},
 		{"~Q~uick view", 2, "C-x q"},
 		{"~I~nfo", 3, "C-x i"},
 		{"~T~ree", 4, NULL},
