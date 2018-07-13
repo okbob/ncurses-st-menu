@@ -625,7 +625,6 @@ menubar_draw(struct ST_MENU *menu)
 		i += 1;
 	}
 
-
 	wnoutrefresh(menu->window);
 
 	if (menu->active_submenu)
@@ -839,6 +838,8 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 			bool	is_cursor_row = menu->cursor_row == row;
 			bool	first_char = true;
 			bool	is_extern_accel;
+			int		text_y = -1;
+			int		text_x = -1;
 
 			if (is_cursor_row)
 			{
@@ -906,6 +907,16 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 				{
 					int chlen = char_length(config, text);
 
+					/* Save initial position of text. This first char, when is not
+					 * external accelerator used, or first char after highlighted char
+					 * when extern accelerator is used.
+					 */
+					if (text_y == -1 && text_x == -1)
+					{
+						if (!is_extern_accel || !highlight)
+							getyx(draw_area, text_y, text_x);
+					}
+
 					waddnstr(draw_area, text, chlen);
 					text += chlen;
 				}
@@ -943,7 +954,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 			{
 				mvwprintw(draw_area,
 								row - (draw_box ? 0 : 1),
-								text_min_x,
+								text_x - 1,
 									"%lc", config->mark_tag);
 			}
 
@@ -1212,8 +1223,11 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 					{
 						int		minx, maxx;
 
+						/* first menubar field get mouse from left corner */
 						minx = i > 0 ? (menu->bar_fields_x_pos[i] - chars_before) : 0;
-						maxx = menu->bar_fields_x_pos[i + 1] - chars_before;
+
+						/* last menubar field get mouse to right corner */
+						maxx = i + 1 < menu->nitems ? menu->bar_fields_x_pos[i + 1] - chars_before : mevent->x + 1;
 
 						/* transform possitions to target menu code */
 						if (mevent->x >= minx && mevent->x < maxx)

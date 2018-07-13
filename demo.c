@@ -137,6 +137,7 @@ main()
 	bool	alt;
 	bool	requested_exit = false;
 	int		style = 10;
+	int		style_offset = 0;
 
 	WINDOW *w1 = NULL;
 	WINDOW *w2 = NULL;
@@ -316,10 +317,10 @@ main()
 	/* prepare main window */
 	getmaxyx(stdscr, maxy, maxx);
 
-	w1 = subwin(stdscr, 4, 10, 0, 0);
-	w2 = subwin(stdscr, 4, maxx - 10, 0, 10);
-	w3 = subwin(stdscr, maxy - 4, 10, 4, 0);
-	w4 = subwin(stdscr, maxy - 4, maxx - 10, 4, 10);
+	w1 = subwin(stdscr, 10, 15, 1, 0);
+	w2 = subwin(stdscr, 10, maxx - 15, 1, 15);
+	w3 = subwin(stdscr, maxy - 11, 15, 11, 0);
+	w4 = subwin(stdscr, maxy - 11, maxx - 15, 11, 15);
 
 	for (i = 0; i < 4; i++)
 	{
@@ -336,6 +337,7 @@ main()
 			waddnstr(w, demo + j , maxx);
 		}
 
+		box(w, 0, 0);
 		wrefresh(w);
 	}
 
@@ -352,6 +354,8 @@ main()
 
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);
+
+	st_menu_set_option(menu, 81, ST_MENU_OPTION_MARKED);
 
 	/* post meubar (display it) */
 	st_menu_post(menu);
@@ -432,6 +436,25 @@ main()
 				menu = st_menu_new_menubar2(&config, style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 
 				st_menu_load(menu, cursor_store);
+
+				style_offset = 0;
+				for (i = 0; i <= ST_MENU_LAST_STYLE; i++)
+				{
+					int menu_code;
+
+					if (i == ST_MENU_STYLE_FREE_DOS_P)
+					{
+						style_offset = 1;
+						continue;
+					}
+
+					menu_code = i + 70 - style_offset;
+
+					if (style == i)
+						st_menu_set_option(menu, menu_code, ST_MENU_OPTION_MARKED);
+					else
+						st_menu_reset_option(menu, menu_code, ST_MENU_OPTION_MARKED);
+				}
 
 				st_menu_post(menu);
 
