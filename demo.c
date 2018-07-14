@@ -355,7 +355,7 @@ main()
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);
 
-	st_menu_set_option(menu, 81, ST_MENU_OPTION_MARKED);
+	st_menu_enable_option(menu, 81, ST_MENU_OPTION_MARKED);
 
 	/* post meubar (display it) */
 	st_menu_post(menu);
@@ -450,10 +450,7 @@ main()
 
 					menu_code = i + 70 - style_offset;
 
-					if (style == i)
-						st_menu_set_option(menu, menu_code, ST_MENU_OPTION_MARKED);
-					else
-						st_menu_reset_option(menu, menu_code, ST_MENU_OPTION_MARKED);
+					st_menu_set_option(menu, menu_code, ST_MENU_OPTION_MARKED, style == i);
 				}
 
 				st_menu_post(menu);

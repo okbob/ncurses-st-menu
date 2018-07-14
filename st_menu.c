@@ -1860,7 +1860,7 @@ st_menu_selected_item(bool *activated)
  * Set flag of first menu item specified by code
  */
 bool
-st_menu_set_option(struct ST_MENU *menu, int code, int option)
+st_menu_enable_option(struct ST_MENU *menu, int code, int option)
 {
 	ST_MENU_ITEM *menu_items = menu->menu_items;
 	int		i = 0;
@@ -1874,7 +1874,7 @@ st_menu_set_option(struct ST_MENU *menu, int code, int option)
 		}
 
 		if (menu->submenus[i])
-			if (st_menu_set_option(menu->submenus[i], code, option))
+			if (st_menu_enable_option(menu->submenus[i], code, option))
 				return true;
 
 		menu_items += 1;
@@ -1903,6 +1903,63 @@ st_menu_reset_option(struct ST_MENU *menu, int code, int option)
 
 		if (menu->submenus[i])
 			if (st_menu_reset_option(menu->submenus[i], code, option))
+				return true;
+
+		menu_items += 1;
+		i += 1;
+	}
+
+	return false;
+}
+
+/*
+ * Reset flag of first menu item specified by code
+ */
+bool
+st_menu_reset_all_option(struct ST_MENU *menu, int option)
+{
+	ST_MENU_ITEM *menu_items = menu->menu_items;
+	int		i = 0;
+
+	while (menu_items->text)
+	{
+		menu->options[i] &= ~option;
+
+		if (menu->submenus[i])
+			if (st_menu_reset_all_option(menu->submenus[i], option))
+				return true;
+
+		menu_items += 1;
+		i += 1;
+	}
+
+	return false;
+}
+
+
+/*
+ * Set flag of first menu item specified by code
+ */
+bool
+st_menu_set_option(struct ST_MENU *menu, int code, int option, bool value)
+{
+	ST_MENU_ITEM *menu_items = menu->menu_items;
+	int		i = 0;
+
+	while (menu_items->text)
+	{
+		if (menu_items->code == code)
+		{
+			if (value)
+				menu->options[i] |= option;
+			else
+				menu->options[i] &= ~option;
+
+			return true;
+		}
+
+		if (menu->submenus[i])
+			if (st_menu_set_option(menu->submenus[i], code, option, value))
 				return true;
 
 		menu_items += 1;
