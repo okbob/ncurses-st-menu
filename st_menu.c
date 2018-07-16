@@ -752,11 +752,18 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 				attr_t		attr;
 				short int	cp;
 
+				/* skip overwritten content */
 				if (i < wmaxy && j < wmaxx)
 					continue;
 
 				mvwin_wch(menu->shadow_window, i, j, &cch);
 				getcchar(&cch, wch, &attr, &cp, NULL);
+
+				/*
+				 * When original attributte holds A_ALTCHARSET bit, then
+				 * then updated attributte have to hold this bit too, elsewhere
+				 * ACS chars will be broken.
+				 */
 				setcchar(&cch, wch,
 									config->menu_shadow_attr | (attr & A_ALTCHARSET),
 									config->menu_shadow_cpn,
