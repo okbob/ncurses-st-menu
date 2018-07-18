@@ -727,6 +727,9 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 		int		smaxy, smaxx;
 		int		i, j;
 		int		wmaxy, wmaxx;
+		attr_t	shadow_attr;
+
+		shadow_attr = config->menu_shadow_attr | A_DIM;
 
 		getmaxyx(menu->shadow_window, smaxy, smaxx);
 
@@ -765,7 +768,7 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 				 * ACS chars will be broken.
 				 */
 				setcchar(&cch, wch,
-									config->menu_shadow_attr | (attr & A_ALTCHARSET),
+									shadow_attr | (attr & A_ALTCHARSET),
 									config->menu_shadow_cpn,
 									NULL);
 				mvwadd_wch(menu->shadow_window, i, j, &cch);
@@ -782,12 +785,12 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 
 				if (mvwinch(menu->shadow_window, i, j) & A_ALTCHARSET)
 					mvwchgat(menu->shadow_window, i, j, 1,
-								config->menu_shadow_attr | A_ALTCHARSET,
+								shadow_attr | A_ALTCHARSET,
 								config->menu_shadow_cpn,
 								NULL);
 				else
 					mvwchgat(menu->shadow_window, i, j, 1,
-								config->menu_shadow_attr,
+								shadow_attr,
 								config->menu_shadow_cpn,
 								NULL);
 			}
@@ -1966,7 +1969,7 @@ st_menu_reset_option(struct ST_MENU *menu, int code, int option)
  * Reset flag of first menu item specified by code
  */
 bool
-st_menu_reset_all_option(struct ST_MENU *menu, int option)
+st_menu_reset_all_options(struct ST_MENU *menu, int option)
 {
 	ST_MENU_ITEM *menu_items = menu->menu_items;
 	int		i = 0;
@@ -1976,8 +1979,7 @@ st_menu_reset_all_option(struct ST_MENU *menu, int option)
 		menu->options[i] &= ~option;
 
 		if (menu->submenus[i])
-			if (st_menu_reset_all_option(menu->submenus[i], option))
-				return true;
+			st_menu_reset_all_options(menu->submenus[i], option);
 
 		menu_items += 1;
 		i += 1;
@@ -1986,6 +1988,36 @@ st_menu_reset_all_option(struct ST_MENU *menu, int option)
 	return false;
 }
 
+
+/*
+ * Reset flag of first menu item specified by code
+ */
+bool
+st_menu_reset_all_submenu_options(struct ST_MENU *menu, int menu_code, int option)
+{
+	ST_MENU_ITEM *menu_items = menu->menu_items;
+	int		i = 0;
+
+	while (menu_items->text)
+	{
+		if (menu->submenus[i])
+		{
+			if (menu_items->code == menu_code)
+			{
+				st_menu_reset_all_options(menu->submenus[i], option);
+				return true;
+			}
+
+			if (st_menu_reset_all_submenu_options(menu->submenus[i], menu_code, option))
+				return true;
+		}
+
+		menu_items += 1;
+		i += 1;
+	}
+
+	return false;
+}
 
 /*
  * Set flag of first menu item specified by code
