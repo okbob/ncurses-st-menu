@@ -216,11 +216,12 @@ main()
 		{"_o_Old Turbo", 82},
 		{"_f_Free Dos", 83},
 		{"_m_Midnight46", 84},
+		{"_d_Dbase", 85},
 		{NULL, -1, NULL}
 	};
 
 #define FIRST_THEME_CODE		70
-#define LAST_THEME_CODE			84
+#define LAST_THEME_CODE			85
 
 	ST_MENU_ITEM _command[] = {
 		{"~U~ser menu", 35, "F2"},
