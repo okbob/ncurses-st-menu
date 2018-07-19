@@ -137,7 +137,6 @@ main()
 	bool	alt;
 	bool	requested_exit = false;
 	int		style = 10;
-	int		style_offset = 0;
 
 	WINDOW *w1 = NULL;
 	WINDOW *w2 = NULL;
@@ -200,28 +199,28 @@ main()
 		{NULL, -1, NULL}
 	};
 
+#define THEME_GROUP			1
+#define MENU_ITEM_SET_STYLE		52
+
 	ST_MENU_ITEM _styles[] = {
-		{"_1_Midnight black", 70},
-		{"_2_Midnight", 71},
-		{"_3_Vision", 72},
-		{"_4_Dos", 73},
-		{"_5_FAND 1", 74},
-		{"_6_FAND 2", 75},
-		{"_7_Fox", 76},
-		{"_8_Perfect", 77},
-		{"_9_No color", 78},
-		{"_0_One color", 79},
-		{"_t_Turbo", 80},
-		{"_p_Pdmenu", 81, NULL, ST_MENU_OPTION_DEFAULT},
-		{"_o_Old Turbo", 82},
-		{"_f_Free Dos", 83},
-		{"_m_Midnight46", 84},
-		{"_d_Dbase", 85},
+		{"_1_Midnight black", 70, NULL, ST_MENU_STYLE_MCB, THEME_GROUP},
+		{"_2_Midnight", 71, NULL, ST_MENU_STYLE_MC, THEME_GROUP},
+		{"_3_Vision", 72, NULL, ST_MENU_STYLE_VISION, THEME_GROUP},
+		{"_4_Dos", 73, NULL, ST_MENU_STYLE_DOS, THEME_GROUP},
+		{"_5_FAND 1", 74, NULL, ST_MENU_STYLE_FAND_1, THEME_GROUP},
+		{"_6_FAND 2", 75, NULL, ST_MENU_STYLE_FAND_2, THEME_GROUP},
+		{"_7_Fox", 76, NULL, ST_MENU_STYLE_FOXPRO, THEME_GROUP},
+		{"_8_Perfect", 77, NULL, ST_MENU_STYLE_PERFECT, THEME_GROUP},
+		{"_9_No color", 78, NULL, ST_MENU_STYLE_NOCOLOR, THEME_GROUP},
+		{"_0_One color", 79, NULL, ST_MENU_STYLE_ONECOLOR, THEME_GROUP},
+		{"_t_Turbo", 80, NULL, ST_MENU_STYLE_TURBO, THEME_GROUP},
+		{"_p_Pdmenu", 81, NULL, ST_MENU_STYLE_PDMENU, THEME_GROUP, ST_MENU_OPTION_DEFAULT},
+		{"_o_Old Turbo", 82, NULL, ST_MENU_STYLE_OLD_TURBO, THEME_GROUP},
+		{"_f_Free Dos", 83, NULL, ST_MENU_STYLE_FREE_DOS, THEME_GROUP},
+		{"_m_Midnight46", 84, NULL, ST_MENU_STYLE_MC46, THEME_GROUP},
+		{"_d_Dbase", 85, NULL, ST_MENU_STYLE_DBASE, THEME_GROUP},
 		{NULL, -1, NULL}
 	};
-
-#define FIRST_THEME_CODE		70
-#define LAST_THEME_CODE			85
 
 	ST_MENU_ITEM _command[] = {
 		{"~U~ser menu", 35, "F2"},
@@ -244,16 +243,16 @@ main()
 		{"Edit ~m~enu file", 50, NULL},
 		{"Edit highli~g~hting group file", 51, NULL},
 		{"--", -1, NULL},
-		{"Set st~y~le", 52, NULL, 0, _styles},
+		{"Set st~y~le", MENU_ITEM_SET_STYLE, NULL, 0, 0, 0, _styles},
 		{"_@_Do something on current file", 53, NULL},
 		{NULL, -1, NULL}
 	};
 
 	ST_MENU_ITEM menubar[] = {
-		{"~L~eft", 60, NULL, 0, _left},
-		{"~F~ile", 61, NULL, 0, _file},
-		{"~C~ommand", 62, NULL, 0, _command},
-		{"~O~ptions", 63, NULL, ST_MENU_OPTION_DISABLED, NULL},
+		{"~L~eft", 60, NULL, 0, 0, 0, _left},
+		{"~F~ile", 61, NULL, 0, 0, 0,  _file},
+		{"~C~ommand", 62, NULL, 0, 0, 0,  _command},
+		{"~O~ptions", 63, NULL, 0, 0, ST_MENU_OPTION_DISABLED, NULL},
 		{NULL, -1, NULL}
 	};
 
@@ -405,15 +404,13 @@ main()
 		active_item = st_menu_selected_item(&activated);
 		if (processed && activated)
 		{
-			if (active_item->code >= FIRST_THEME_CODE && active_item->code <= LAST_THEME_CODE)
+			if (active_item->group == THEME_GROUP)
 			{
 				int		cursor_store[1024];
 				int		fcp = 2;
+				int		menu_code = active_item->code;
 
-				style = active_item->code - 70;
-				/* ST_MENU_STYLE_FREE_DOS requires two slots */
-				if (style > ST_MENU_STYLE_FREE_DOS)
-					style += 1;
+				style = active_item->data;
 
 				st_menu_save(menu, cursor_store, 1023);
 
@@ -438,21 +435,8 @@ main()
 
 				st_menu_load(menu, cursor_store);
 
-				style_offset = 0;
-				for (i = 0; i <= ST_MENU_LAST_STYLE; i++)
-				{
-					int menu_code;
-
-					if (i == ST_MENU_STYLE_FREE_DOS_P)
-					{
-						style_offset = 1;
-						continue;
-					}
-
-					menu_code = i + 70 - style_offset;
-
-					st_menu_set_option(menu, menu_code, ST_MENU_OPTION_MARKED, style == i);
-				}
+				st_menu_reset_all_submenu_options(menu, MENU_ITEM_SET_STYLE, ST_MENU_OPTION_MARKED);
+				st_menu_enable_option(menu, menu_code, ST_MENU_OPTION_MARKED);
 
 				st_menu_post(menu);
 

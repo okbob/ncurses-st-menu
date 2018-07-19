@@ -70,7 +70,7 @@ main()
 	};
 
 	ST_MENU_ITEM menubar[] = {
-		{"~F~ile", 61, NULL, 0, _file},
+		{"~F~ile", 61, NULL, 0, 0, 0, _file},
 		{NULL, -1, NULL}
 	};
 
