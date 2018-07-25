@@ -112,6 +112,9 @@ Available styles:
 #define ST_MENU_STYLE_OLD_TURBO		12
 #define ST_MENU_STYLE_FREE_DOS		13	/* menubar style */
 #define ST_MENU_STYLE_FREE_DOS_P	14	/* pulldown menu style */
+#define ST_MENU_STYLE_MC46			15
+#define ST_MENU_STYLE_DBASE			16
+
 ```
 
 # Functions
@@ -135,8 +138,12 @@ extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows);
 
 extern ST_MENU *st_menu_selected_item(bool *activated);
 
-extern bool st_menu_set_option(struct ST_MENU *menu, int code, int option);
+extern bool st_menu_enable_option(struct ST_MENU *menu, int code, int option);
 extern bool st_menu_reset_option(struct ST_MENU *menu, int code, int option);
+extern bool st_menu_set_option(struct ST_MENU *menu, int code, int option, bool value);
+extern bool st_menu_reset_all_submenu_options(struct ST_MENU *menu, int menu_code, int option);
+extern bool st_menu_reset_all_options(struct ST_MENU *menu, int option);
+
 ```
 
 ## Description
