@@ -55,7 +55,6 @@ repeat:
 int
 main()
 {
-	PANEL *mainpanel;
 	ST_MENU_CONFIG  config;
 	ST_MENU_ITEM		   *active_item;
 	struct ST_MENU *menu;
@@ -122,8 +121,7 @@ main()
 	 * main window should be panelized. Only panels can be
 	 * overlapped without unwanted effects.
 	 */
-	mainpanel = new_panel(stdscr);
-	st_menu_set_desktop_panel(mainpanel);
+	st_menu_set_desktop_window(stdscr);
 
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);

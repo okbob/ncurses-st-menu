@@ -125,18 +125,19 @@ int
 main()
 {
 	int		maxx, maxy;
-	PANEL *mainpanel;
 	ST_MENU_CONFIG  config;
 	ST_MENU_CONFIG config_b;
 	ST_MENU_ITEM	   *active_item;
+	ST_CMDBAR_ITEM	   *active_command;
 	struct ST_MENU *menu;
+	struct ST_CMDBAR *cmdbar;
 	bool	activated;
 	int		c;
 	MEVENT	mevent;
 	int		i;
 	bool	alt;
 	bool	requested_exit = false;
-	int		style = 10;
+	int		style = 1;
 
 	WINDOW *w1 = NULL;
 	WINDOW *w2 = NULL;
@@ -151,6 +152,17 @@ main()
 			"aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum "
 			"dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia"
 			"deserunt mollit anim id est laborum.";
+
+	ST_CMDBAR_ITEM	bottombar[] = {
+		{"Help", false, 1, 1, 0},
+		{"Menu", false, 2, 2, 0},
+		{"View", false, 3, 3, 0},
+		{"Edit", false, 4, 4, 0},
+		{"Copy", false, 5, 5, 0},
+		{"PullDn", false, 9, 99, 0},
+		{"Quit", false, 10, 100, 0},
+		{NULL}
+	};
 
 	ST_MENU_ITEM _left[] = {
 		{"~F~ile listing", 1, NULL, ST_MENU_OPTION_MARKED},
@@ -290,10 +302,12 @@ main()
 
 	refresh();
 
+	use_default_colors();
+
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
-	st_menu_load_style(&config, 11, 2);
+	st_menu_load_style(&config, 1, 2);
 
 #ifdef NCURSES_EXT_FUNCS
 
@@ -319,8 +333,8 @@ main()
 
 	w1 = subwin(stdscr, 10, 15, 1, 0);
 	w2 = subwin(stdscr, 10, maxx - 15, 1, 15);
-	w3 = subwin(stdscr, maxy - 11, 15, 11, 0);
-	w4 = subwin(stdscr, maxy - 11, maxx - 15, 11, 15);
+	w3 = subwin(stdscr, maxy - 12, 15, 11, 0);
+	w4 = subwin(stdscr, maxy - 12, maxx - 15, 11, 15);
 
 	for (i = 0; i < 4; i++)
 	{
@@ -341,28 +355,26 @@ main()
 		wrefresh(w);
 	}
 
-	wrefresh(stdscr);
-
-	/*
-	 * main window should be panelized. Only panels can be
-	 * overlapped without unwanted effects.
-	 */
-	mainpanel = new_panel(stdscr);
-
-	/* pass desktop panel to lib to show shadows correctly */
-	st_menu_set_desktop_panel(mainpanel);
+	/* prepare state variable for cmdbar */
+	cmdbar = st_cmdbar_new(&config, bottombar);
+	/* display cmdbar */
+	st_cmdbar_post(cmdbar);
 
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);
 
 	st_menu_enable_option(menu, 81, ST_MENU_OPTION_MARKED);
+	st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
 
-	/* post meubar (display it) */
+	/* pass desktop panel to lib to show shadows correctly */
+	st_menu_set_desktop_window(stdscr);
+
+	/* post menubar (display it) */
 	st_menu_post(menu);
 
-	c = get_event(&mevent, &alt);
+	doupdate();
 
-	refresh();
+	c = get_event(&mevent, &alt);
 
 	while (!requested_exit)
 	{
@@ -375,7 +387,7 @@ main()
 			getmaxyx(stdscr, maxy, maxx);
 			wbkgd(stdscr, COLOR_PAIR(1));
 
-			for (i = 0; i <= maxy; i++)
+			for (i = 0; i < maxy; i++)
 			{
 				wmove(stdscr, i, 0);
 
@@ -392,6 +404,10 @@ main()
 
 			st_menu_load(menu, cursor_store);
 
+			st_cmdbar_free(cmdbar);
+			cmdbar = st_cmdbar_new(&config, bottombar);
+
+			st_cmdbar_post(cmdbar);
 			st_menu_post(menu);
 
 			doupdate();
@@ -453,6 +469,41 @@ main()
 				break;
 			}
 		}
+		else if (processed)
+		{
+			active_command = st_menu_selected_command(&activated);
+
+			if (activated)
+			{
+				if (active_command->code == 100)
+				{
+					requested_exit = true;
+					break;
+				}
+				else if (active_command->code == 99)
+				{
+					st_menu_set_focus(menu, ST_MENU_FOCUS_FULL);
+					st_menu_post(menu);
+					doupdate();
+				}
+				else
+					break;
+			}
+		}
+
+		if (!processed && c == ST_MENU_ESCAPE)
+		{
+			st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
+			st_menu_post(menu);
+			doupdate();
+		}
+
+		if (!processed && c == KEY_MOUSE)
+		{
+			st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
+			st_menu_post(menu);
+			doupdate();
+		}
 
 		/* q is common command for exit (when it is not used like accelerator */
 		if (!processed && (c == 'q' || c == KEY_F(10)))
@@ -480,6 +531,8 @@ main()
 		printf("exiting...\n");
 	else if (active_item)
 		printf("selected text: %s, code: %d\n", active_item->text, active_item->code);
+	else if (active_command)
+		printf("selected command: %s, code: %d\n", active_command->text, active_command->code);
 	else
 		printf("ending without select menu item\n");
 

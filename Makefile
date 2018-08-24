@@ -1,4 +1,4 @@
-all: libst_menu.so libst_menu.a demo simple
+all: libst_menu.so libst_menu.a demoapp demoapp_sl simple
 
 # possible to use gcc flag -DNCURSES_WIDECHAR=1 where is possible
 # then any unicode char can be a accelerator
@@ -31,8 +31,10 @@ libst_menu.so: st_menu_styles.o st_menu.o $(UNICODE_OBJ)
 libst_menu.a: st_menu_styles.o st_menu.o $(UNICODE_OBJ)
 	$(AR) rcs libst_menu.a st_menu_styles.o st_menu.o $(UNICODE_OBJ)
 
-demo: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
+demoapp: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
 	$(CC) demo/demo.c -o demoapp libst_menu.a -Wall $(LDLIBS) -Iinclude $(CFLAGS)
+
+demoapp_sl: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
 	$(CC) demo/demo.c -o demoapp_sl $(UNICODE_OBJ) -Wall $(LDLIBS) -Iinclude -L. -lst_menu   $(CFLAGS)
 
 simple: demo/simple.c libst_menu.a include/st_menu.h

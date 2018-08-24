@@ -57,16 +57,35 @@ struct ST_MENU
 	int			ideal_x_pos;					/* x pos when is enough space */
 	int			rows;							/* number of rows */
 	int			cols;							/* number of columns */
+	int			focus;							/* identify possible event filtering */
 	char	   *title;
 	bool		is_menubar;
 	struct ST_MENU	*active_submenu;
 	struct ST_MENU	**submenus;
 };
 
-static ST_MENU_ITEM	   *selected_item = NULL;
+struct ST_CMDBAR
+{
+	ST_CMDBAR_ITEM	   *cmdbar_items;
+	WINDOW	   *window;
+	PANEL	   *panel;
+	ST_MENU_CONFIG *config;
+	int			nitems;
+	int		   *positions;
+	char	  **labels;
+	ST_CMDBAR_ITEM	   **ordered_items;
+};
+
+static struct ST_CMDBAR   *active_cmdbar = NULL;
+
+static ST_MENU_ITEM		   *selected_item = NULL;
+static ST_CMDBAR_ITEM	   *selected_command = NULL;
+
 static bool			press_accelerator = false;
 static bool			button1_clicked = false;
 static bool			press_enter = false;
+
+static bool			command_was_activated = false;
 
 static inline int char_length(ST_MENU_CONFIG *config, const char *c);
 static inline int char_width(ST_MENU_CONFIG *config, char *c, int bytes);
@@ -85,6 +104,8 @@ static void pulldownmenu_content_size(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu
 static void pulldownmenu_draw_shadow(struct ST_MENU *menu);
 static void menubar_draw(struct ST_MENU *menu);
 static void pulldownmenu_draw(struct ST_MENU *menu, bool is_top);
+static void cmdbar_draw(struct ST_CMDBAR *cmdbar);
+static bool cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent);
 
 /*
  * Generic functions
@@ -207,7 +228,7 @@ chr_casexfrm(ST_MENU_CONFIG *config, char *str)
 	{
 #ifdef HAVE_LIBUNISTRING
 
-	size_t	length;
+		size_t	length;
 
 		length = sizeof(buffer);
 		result = u8_casexfrm((const uint8_t *) str,
@@ -537,10 +558,20 @@ menubar_draw(struct ST_MENU *menu)
 {
 	ST_MENU_ITEM	   *menu_item = menu->menu_items;
 	ST_MENU_CONFIG	*config = menu->config;
-
+	bool	has_focus;
+	bool	has_accelerators;
 	int		i;
 
 	selected_item = NULL;
+
+	has_focus = menu->focus == ST_MENU_FOCUS_FULL;
+	has_accelerators = menu->focus == ST_MENU_FOCUS_FULL || 
+								menu->focus == ST_MENU_FOCUS_ALT_MOUSE;
+
+	if (has_focus)
+		wbkgd(menu->window, COLOR_PAIR(config->menu_background_cpn) | config->menu_background_attr);
+	else
+		wbkgd(menu->window, COLOR_PAIR(config->menu_unfocused_cpn) | config->menu_unfocused_attr);
 
 	werase(menu->window);
 
@@ -549,7 +580,7 @@ menubar_draw(struct ST_MENU *menu)
 	{
 		char	*text = menu_item->text;
 		bool	highlight = false;
-		bool	is_cursor_row = menu->cursor_row == i + 1;
+		bool	is_cursor_row = menu->cursor_row == i + 1 && has_focus;
 		bool	is_disabled = menu_item->options & ST_MENU_OPTION_DISABLED;
 		int		current_pos;
 
@@ -582,13 +613,13 @@ menubar_draw(struct ST_MENU *menu)
 					continue;
 				}
 
-				if (!is_disabled)
+				if (!is_disabled && has_accelerators)
 				{
 					if (!highlight)
 					{
 						wattron(menu->window,
 							COLOR_PAIR(is_cursor_row ? config->cursor_accel_cpn : config->accelerator_cpn) |
-									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr));
+									   (is_cursor_row ? config->cursor_accel_attr : config->accelerator_attr) );
 					}
 					else
 					{
@@ -626,6 +657,10 @@ menubar_draw(struct ST_MENU *menu)
 	}
 
 	wnoutrefresh(menu->window);
+
+	/* command bar should be drawed first - because it is deeper than pulldown menu */
+	if (active_cmdbar)
+		cmdbar_draw(active_cmdbar);
 
 	if (menu->active_submenu)
 		pulldownmenu_draw(menu->active_submenu, true);
@@ -737,10 +772,13 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 		top_panel(menu->shadow_panel);
 
 		/* desktop_win must be global */
+		werase(menu->shadow_window);
+
 		if (desktop_win)
 			overwrite(desktop_win, menu->shadow_window);
-		else
-			werase(menu->shadow_window);
+		if (active_cmdbar)
+			overwrite(active_cmdbar->window, menu->shadow_window);
+
 
 		wmaxy = smaxy - 1;
 		wmaxx = smaxx - config->shadow_width;
@@ -1033,9 +1071,9 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
  * should be panelized.
  */
 void
-st_menu_set_desktop_panel(PANEL *pan)
+st_menu_set_desktop_window(WINDOW *win)
 {
-	desktop_win = panel_window(pan);
+	desktop_win = win;
 }
 
 /*
@@ -1079,6 +1117,16 @@ st_menu_unpost(struct ST_MENU *menu, bool close_active_submenu)
 		hide_panel(menu->shadow_panel);
 
 	update_panels();
+}
+
+/*
+ * Allow to set focus level for menu objects. This allow to
+ * redirect events to some else where focus is not full.
+ */
+void
+st_menu_set_focus(struct ST_MENU *menu, int focus)
+{
+	menu->focus = focus;
 }
 
 /*
@@ -1150,6 +1198,12 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 	button1_clicked = false;
 
 	*unpost_submenu = false;
+
+	/* Fucus filter */
+	if (menu->focus == ST_MENU_FOCUS_MOUSE_ONLY && c != KEY_MOUSE)
+		return false;
+	else if (menu->focus == ST_MENU_FOCUS_ALT_MOUSE && c != KEY_MOUSE && !alt)
+		return false;
 
 	/*
 	 * Propagate event to nested active object first. When nested object would be
@@ -1573,10 +1627,20 @@ draw_object:
 	 */
 	if (is_top)
 	{
+		/* when we processed some event, then we usually got a full focus */
+		if (processed)
+			menu->focus = ST_MENU_FOCUS_FULL;
+
 		if (menu->is_menubar)
 			menubar_draw(menu);
 		else
 			pulldownmenu_draw(menu, true);
+
+		/* eat all keyboard input, when focus is full on top level */
+		if (c != KEY_MOUSE && c != KEY_RESIZE &&
+				c != ST_MENU_ESCAPE &&
+				menu->focus == ST_MENU_FOCUS_FULL)
+			processed = true;
 	}
 
 	return processed;
@@ -1585,9 +1649,27 @@ draw_object:
 bool
 st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 {
-	bool aux_unpost_submenu = false;
+	bool		aux_unpost_submenu = false;
+	bool		processed;
 
-	return _st_menu_driver(menu, c, alt, mevent, true, false, &aux_unpost_submenu);
+	/* any mouse press cleaning global state */
+	if (mevent->bstate & BUTTON1_PRESSED)
+		selected_command = NULL;
+
+	processed = _st_menu_driver(menu, c, alt, mevent, true, false, &aux_unpost_submenu);
+	if (!processed)
+	{
+		/*
+		 * some events can be sent to command bar in dependency
+		 * on menubar focus.
+		 */
+		if (active_cmdbar &&
+				(menu->focus == ST_MENU_FOCUS_MOUSE_ONLY ||
+				 menu->focus == ST_MENU_FOCUS_ALT_MOUSE))
+			processed = cmdbar_driver(active_cmdbar, c, alt, mevent);
+	}
+
+	return processed;
 }
 
 /*
@@ -2055,3 +2137,321 @@ st_menu_set_option(struct ST_MENU *menu, int code, int option, bool value)
 
 	return false;
 }
+
+
+/*
+ * Reduce string to expected display width. The buffer should be
+ * preallocated on good enough length - size of src.
+ */
+static void
+reduce_string(ST_MENU_CONFIG *config, int display_width, char *dest, char *src)
+{
+	int current_width = str_width(config, src);
+	int		char_count = 0;
+
+	while (src && display_width > 0)
+	{
+		if (current_width <= display_width)
+		{
+			strcpy(dest, src);
+			return;
+		}
+		else
+		{
+			int		chrlen = char_length(config, src);
+			int		dw = char_width(config, src, chrlen);
+
+			if (char_count < 2)
+			{
+				memcpy(dest, src, chrlen);
+				dest += chrlen;
+				display_width -= dw;
+			}
+			else if (char_count == 2)
+			{
+				*dest++ = '~';
+				display_width -= 1;
+			}
+
+			char_count += 1;
+			current_width -= dw;
+			src += chrlen;
+		}
+	}
+
+	*dest = '\0';
+}
+
+static void
+cmdbar_draw(struct ST_CMDBAR *cmdbar)
+{
+	ST_MENU_CONFIG *config = cmdbar->config;
+	int		i;
+
+	show_panel(cmdbar->panel);
+	top_panel(cmdbar->panel);
+
+	update_panels();
+
+	werase(cmdbar->window);
+
+	for (i = 0; i < cmdbar->nitems; i++)
+	{
+		wmove(cmdbar->window, 0, cmdbar->positions[i]);
+		wattron(cmdbar->window,
+				  COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+
+		wprintw(cmdbar->window, "%2d", i+1);
+
+		wattroff(cmdbar->window,
+				  COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+
+		if (cmdbar->labels[i])
+			waddstr(cmdbar->window, cmdbar->labels[i]);
+	}
+
+	wnoutrefresh(cmdbar->window);
+}
+
+static bool
+cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent)
+{
+	ST_CMDBAR_ITEM *cmdbar_item = cmdbar->cmdbar_items;
+	int		maxy, maxx;
+	int		i;
+	int		last_position;
+	int		aux_counter;
+
+	if (c == KEY_MOUSE && mevent->bstate & (BUTTON1_PRESSED | BUTTON1_RELEASED))
+	{
+		int		y = mevent->y;
+		int		x = mevent->x;
+		int		i;
+
+		if (!wenclose(cmdbar->window, y, x))
+		{
+			command_was_activated = true;
+			return false;
+		}
+
+		for (i = 0; i < cmdbar->nitems; i++)
+		{
+			if (cmdbar->positions[i] <= x && x < cmdbar->positions[i + 1])
+			{
+				if (cmdbar->labels[i])
+				{
+					/*
+					 * This design is not exact, but it is good enough.
+					 * The click is valid, when press and release is over same
+					 * object.
+					 */
+					if (mevent->bstate & BUTTON1_PRESSED)
+					{
+						command_was_activated = false;
+						selected_command = cmdbar->ordered_items[i];
+						return true;
+					}
+					else if (mevent->bstate & BUTTON1_RELEASED)
+					{
+						if (selected_command == cmdbar->ordered_items[i])
+						{
+							command_was_activated = true;
+							return true;
+						}
+					}
+				}
+				else
+				{
+					selected_command = false;
+					return false;
+				}
+			}
+		}
+	}
+	else
+	{
+		while (cmdbar_item->text)
+		{
+			if (cmdbar_item->alt == alt && KEY_F(cmdbar_item->fkey) == c)
+			{
+				selected_command = cmdbar_item;
+				return true;
+			}
+			cmdbar_item += 1;
+		}
+	}
+
+	return false;
+}
+
+ST_CMDBAR_ITEM *
+st_menu_selected_command(bool *activated)
+{
+	*activated = selected_command != NULL && command_was_activated;
+
+	return selected_command;
+}
+
+/*
+ * Create state variable for commandbar. It based on template - a array of ST_CMDBAR_ITEM fields.
+ */
+struct ST_CMDBAR *
+st_cmdbar_new(ST_MENU_CONFIG *config, ST_CMDBAR_ITEM *cmdbar_items)
+{
+	struct ST_CMDBAR *cmdbar;
+	ST_CMDBAR_ITEM *cmdbar_item;
+	int		maxy, maxx;
+	int		i;
+	int		last_position;
+	int		aux_counter;
+
+	cmdbar = safe_malloc(sizeof(struct ST_CMDBAR));
+
+	cmdbar->cmdbar_items = cmdbar_items;
+	cmdbar->config = config;
+
+	getmaxyx(stdscr, maxy, maxx);
+
+	cmdbar->window = newwin(1, maxx, maxy - 1, 0);
+	cmdbar->panel = new_panel(cmdbar->window);
+
+	wbkgd(cmdbar->window,
+					  COLOR_PAIR(config->menu_unfocused_cpn) |
+					  config->menu_unfocused_attr);
+
+	werase(cmdbar->window);
+
+	cmdbar->nitems = 0;
+
+	cmdbar_item = cmdbar_items;
+
+	if (!config->funckey_bar_style)
+	{
+		while (cmdbar_item->text)
+		{
+			cmdbar->nitems += 1;
+			cmdbar_item += 1;
+		}
+	}
+	else
+		cmdbar->nitems = 10;
+
+	cmdbar->positions = safe_malloc(sizeof(int) * (cmdbar->nitems + 1));
+	cmdbar->labels = safe_malloc(sizeof(char*) * cmdbar->nitems);
+	cmdbar->ordered_items = safe_malloc(sizeof(ST_CMDBAR_ITEM *) * cmdbar->nitems);
+	last_position = 0;
+
+	if (config->funckey_bar_style)
+	{
+		int		width = maxx / 10;
+		float	extra_width = (maxx % 10) / 10.0;
+		float	extra_width_sum = 0;
+
+		if (width < 7)
+		{
+			/* when terminal is too thin, don't show all fields */
+			cmdbar->nitems = maxx / 7;
+
+			width = maxx / cmdbar->nitems;
+			extra_width = (maxx % cmdbar->nitems) / (cmdbar->nitems * 1.0);
+			extra_width_sum = 0;
+		}
+
+		for (i = 0; i < cmdbar->nitems; i++)
+		{
+			cmdbar->positions[i] = last_position;
+			last_position += width;
+			extra_width_sum += extra_width;
+			if (extra_width_sum > 1.0)
+			{
+				last_position += 1;
+				extra_width_sum -= 1;
+			}
+		}
+
+		cmdbar->positions[cmdbar->nitems] = maxx + 1;
+
+		cmdbar_item = cmdbar_items;
+		while (cmdbar_item->text)
+		{
+			int		fkey = cmdbar_item->fkey;
+			int		display_width;
+
+			if (cmdbar_item->alt)
+			{
+				endwin();
+				fprintf(stderr, "Alt is not supported in funckey bar style");
+				exit(1);
+			}
+
+			if (fkey < 1 || fkey > 10)
+			{
+				endwin();
+				fprintf(stderr, "fkey code should be between 1 and 10");
+				exit(1);
+			}
+
+			/* don't display keys in reduced bar */
+			if (fkey > cmdbar->nitems)
+			{
+				cmdbar_item += 1;
+				continue;
+			}
+
+			if (cmdbar->labels[fkey - 1])
+			{
+				endwin();
+				fprintf(stderr, "multiple assigned items inside funckey bar");
+				exit(1);
+			}
+
+			cmdbar->ordered_items[fkey - 1] = cmdbar_item;
+
+			display_width = cmdbar->positions[fkey] - cmdbar->positions[fkey - 1] - 2;
+
+			cmdbar->labels[fkey - 1] = safe_malloc(strlen(cmdbar_item->text) + 1);
+
+			reduce_string(config, display_width, cmdbar->labels[fkey - 1], cmdbar_item->text);
+
+			cmdbar_item += 1;
+		}
+	}
+
+	return cmdbar;
+}
+
+void
+st_cmdbar_post(struct ST_CMDBAR *cmdbar)
+{
+	active_cmdbar = cmdbar;
+}
+
+void
+st_cmdbar_unpost(struct ST_CMDBAR *cmdbar)
+{
+	active_cmdbar = NULL;
+
+	hide_panel(cmdbar->panel);
+	update_panels();
+}
+
+void st_cmdbar_free(struct ST_CMDBAR *cmdbar)
+{
+	int		i;
+
+	active_cmdbar = NULL;
+
+	del_panel(cmdbar->panel);
+	delwin(cmdbar->window);
+
+	for (i = 0; i < cmdbar->nitems; i++)
+		if (cmdbar->labels[i])
+			free(cmdbar->labels[i]);
+
+	free(cmdbar->positions);
+	free(cmdbar->ordered_items);
+	free(cmdbar);
+
+	update_panels();
+}
+
