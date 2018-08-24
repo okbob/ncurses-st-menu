@@ -1652,16 +1652,32 @@ st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 	bool		aux_unpost_submenu = false;
 	bool		processed;
 
-	/* any mouse press cleaning global state */
+	/*
+	 * We should to complete mouse click based on two
+	 * events. Mouse click is valid if press, release
+	 * was related with same command. Now, when mouse
+	 * is pressed, we don't know a related object, but
+	 * we can reset selected_command variable.
+	 */
 	if (mevent->bstate & BUTTON1_PRESSED)
 		selected_command = NULL;
 
+	/*
+	 * We would to close pulldown menus on F10 key - similar behave
+	 * like ESCAPE, so we can translate F10 event to ST_MENU_ESCAPE,
+	 * when menubar can accept these keys (based on focus).
+	 */
+	if (KEY_F(10) == c && menu->focus == ST_MENU_FOCUS_FULL)
+		c = ST_MENU_ESCAPE;
+
 	processed = _st_menu_driver(menu, c, alt, mevent, true, false, &aux_unpost_submenu);
+
 	if (!processed)
 	{
 		/*
-		 * some events can be sent to command bar in dependency
-		 * on menubar focus.
+		 * When event was not processed by menubar, then we
+		 * we can try to sent it to command bar. But with 
+		 * full focus, the menubar is hungry.
 		 */
 		if (active_cmdbar &&
 				(menu->focus == ST_MENU_FOCUS_MOUSE_ONLY ||
@@ -2274,6 +2290,7 @@ cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent)
 		{
 			if (cmdbar_item->alt == alt && KEY_F(cmdbar_item->fkey) == c)
 			{
+				command_was_activated = true;
 				selected_command = cmdbar_item;
 				return true;
 			}

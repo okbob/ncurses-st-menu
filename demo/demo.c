@@ -413,7 +413,9 @@ main()
 			doupdate();
 		}
 		else
+		{
 			processed = st_menu_driver(menu, c, alt, &mevent);
+		}
 
 		doupdate();
 
@@ -498,7 +500,7 @@ main()
 			doupdate();
 		}
 
-		if (!processed && c == KEY_MOUSE)
+		if (!processed && (c == KEY_MOUSE || c == KEY_F(10)))
 		{
 			st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
 			st_menu_post(menu);
@@ -506,7 +508,7 @@ main()
 		}
 
 		/* q is common command for exit (when it is not used like accelerator */
-		if (!processed && (c == 'q' || c == KEY_F(10)))
+		if (!processed && (c == 'q'))
 		{
 			requested_exit = true;
 			break;
