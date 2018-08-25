@@ -302,8 +302,6 @@ main()
 
 	refresh();
 
-	use_default_colors();
-
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */

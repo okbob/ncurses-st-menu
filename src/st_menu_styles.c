@@ -119,6 +119,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
 			config->menu_shadow_cpn = start_from_cpn;
 			config->menu_shadow_attr = 0;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
@@ -163,6 +167,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
 			config->menu_shadow_cpn = start_from_cpn;
 			config->menu_shadow_attr = 0;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
@@ -199,6 +207,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 		case ST_MENU_STYLE_FAND_1:
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
 
 			config->menu_shadow_cpn = start_from_cpn;
@@ -242,6 +254,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
 
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
 			config->menu_shadow_cpn = start_from_cpn;
 			config->menu_shadow_attr = 0;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
@@ -283,6 +299,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
 			config->menu_shadow_cpn = start_from_cpn;
 			config->menu_shadow_attr = 0;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
@@ -320,6 +340,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 		case ST_MENU_STYLE_PERFECT:
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
 			config->menu_shadow_cpn = start_from_cpn;
@@ -362,6 +386,9 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_cpn = 0;
 			config->menu_background_attr = 0;
 
+			config->menu_unfocused_cpn = 0;
+			config->menu_unfocused_attr = 0;
+
 			config->menu_shadow_cpn = start_from_cpn;
 			config->menu_shadow_attr = A_REVERSE;
 
@@ -393,6 +420,9 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 		case ST_MENU_STYLE_ONECOLOR:
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
 
 			config->menu_shadow_cpn = start_from_cpn;
 			config->menu_shadow_attr = A_REVERSE;
@@ -430,6 +460,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 		case ST_MENU_STYLE_TURBO:
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
 			config->menu_shadow_cpn = start_from_cpn;
@@ -470,6 +504,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
 
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
 			config->menu_shadow_cpn = start_from_cpn;
 			config->menu_shadow_attr = 0;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
@@ -508,6 +546,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->menu_background_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
 
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_YELLOW, COLOR_BLUE);
+
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_CYAN, COLOR_BLUE);
@@ -540,6 +582,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 		case ST_MENU_STYLE_FREE_DOS:
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_WHITE);
 
 			config->menu_shadow_cpn = start_from_cpn;
@@ -579,6 +625,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 		case ST_MENU_STYLE_FREE_DOS_P:
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = 0;
 			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
 
 			config->menu_shadow_cpn = start_from_cpn;
@@ -662,6 +712,10 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 		case ST_MENU_STYLE_DBASE:
 			config->menu_background_cpn = start_from_cpn;
 			config->menu_background_attr = A_BOLD;
+			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = A_BOLD;
 			init_pair(start_from_cpn++, COLOR_WHITE, COLOR_BLACK);
 
 			config->menu_shadow_cpn = start_from_cpn;

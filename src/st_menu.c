@@ -1676,8 +1676,8 @@ st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 	{
 		/*
 		 * When event was not processed by menubar, then we
-		 * we can try to sent it to command bar. But with 
-		 * full focus, the menubar is hungry.
+		 * we can try to sent it to command bar. But with
+		 * full focus, the menubar is hungry, and we send nothing.
 		 */
 		if (active_cmdbar &&
 				(menu->focus == ST_MENU_FOCUS_MOUSE_ONLY ||
