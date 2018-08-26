@@ -305,7 +305,7 @@ main()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
-	st_menu_load_style(&config, 1, 2);
+	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2);
 
 #ifdef NCURSES_EXT_FUNCS
 
@@ -356,7 +356,6 @@ main()
 	/* prepare state variable for cmdbar */
 	cmdbar = st_cmdbar_new(&config, bottombar);
 	/* display cmdbar */
-	st_cmdbar_post(cmdbar);
 
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);
@@ -369,6 +368,7 @@ main()
 
 	/* post menubar (display it) */
 	st_menu_post(menu);
+	st_cmdbar_post(cmdbar);
 
 	doupdate();
 
@@ -431,6 +431,7 @@ main()
 				st_menu_save(menu, cursor_store, 1023);
 
 				st_menu_free(menu);
+				st_cmdbar_free(cmdbar);
 
 				/* Better to start using default colors in applications instead in lib */
 				if (style == ST_MENU_STYLE_ONECOLOR ||
@@ -451,9 +452,12 @@ main()
 
 				st_menu_load(menu, cursor_store);
 
+				cmdbar = st_cmdbar_new(&config, bottombar);
+
 				st_menu_reset_all_submenu_options(menu, MENU_ITEM_SET_STYLE, ST_MENU_OPTION_MARKED);
 				st_menu_enable_option(menu, menu_code, ST_MENU_OPTION_MARKED);
 
+				st_cmdbar_post(cmdbar);
 				st_menu_post(menu);
 
 				refresh();

@@ -658,9 +658,6 @@ menubar_draw(struct ST_MENU *menu)
 
 	wnoutrefresh(menu->window);
 
-	/* command bar should be drawed first - because it is deeper than pulldown menu */
-	if (active_cmdbar)
-		cmdbar_draw(active_cmdbar);
 
 	if (menu->active_submenu)
 		pulldownmenu_draw(menu->active_submenu, true);
@@ -1630,6 +1627,25 @@ draw_object:
 		/* when we processed some event, then we usually got a full focus */
 		if (processed)
 			menu->focus = ST_MENU_FOCUS_FULL;
+		else
+		{
+			/*
+			 * When event was not processed by menubar, then we
+			 * we can try to sent it to command bar. But with
+			 * full focus, the menubar is hungry, and we send nothing.
+			 */
+			if (active_cmdbar &&
+					(menu->focus == ST_MENU_FOCUS_MOUSE_ONLY ||
+					 menu->focus == ST_MENU_FOCUS_ALT_MOUSE))
+				processed = cmdbar_driver(active_cmdbar, c, alt, mevent);
+		}
+
+		/*
+		 * command bar should be drawed first - because it is deeper
+		 * than pulldown menu
+		 */
+		if (active_cmdbar)
+			cmdbar_draw(active_cmdbar);
 
 		if (menu->is_menubar)
 			menubar_draw(menu);
@@ -1670,22 +1686,7 @@ st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 	if (KEY_F(10) == c && menu->focus == ST_MENU_FOCUS_FULL)
 		c = ST_MENU_ESCAPE;
 
-	processed = _st_menu_driver(menu, c, alt, mevent, true, false, &aux_unpost_submenu);
-
-	if (!processed)
-	{
-		/*
-		 * When event was not processed by menubar, then we
-		 * we can try to sent it to command bar. But with
-		 * full focus, the menubar is hungry, and we send nothing.
-		 */
-		if (active_cmdbar &&
-				(menu->focus == ST_MENU_FOCUS_MOUSE_ONLY ||
-				 menu->focus == ST_MENU_FOCUS_ALT_MOUSE))
-			processed = cmdbar_driver(active_cmdbar, c, alt, mevent);
-	}
-
-	return processed;
+	return _st_menu_driver(menu, c, alt, mevent, true, false, &aux_unpost_submenu);
 }
 
 /*
@@ -2211,19 +2212,78 @@ cmdbar_draw(struct ST_CMDBAR *cmdbar)
 
 	werase(cmdbar->window);
 
-	for (i = 0; i < cmdbar->nitems; i++)
+	if (config->funckey_bar_style)
 	{
-		wmove(cmdbar->window, 0, cmdbar->positions[i]);
-		wattron(cmdbar->window,
-				  COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+		for (i = 0; i < cmdbar->nitems; i++)
+		{
+			wmove(cmdbar->window, 0, cmdbar->positions[i]);
+			wattron(cmdbar->window,
+					  COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 
-		wprintw(cmdbar->window, "%2d", i+1);
+			wprintw(cmdbar->window, "%2d", i+1);
 
-		wattroff(cmdbar->window,
-				  COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
+			wattroff(cmdbar->window,
+					  COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 
-		if (cmdbar->labels[i])
-			waddstr(cmdbar->window, cmdbar->labels[i]);
+			if (cmdbar->labels[i])
+				waddstr(cmdbar->window, cmdbar->labels[i]);
+		}
+	}
+	else
+	{
+		for (i = 0; i < cmdbar->nitems; i++)
+		{
+			bool	need_sep = false;
+			bool	marked = false;
+			int		accel_prop;
+			int		text_prop;
+
+			marked = &cmdbar->cmdbar_items[i] == selected_command && !command_was_activated;
+
+			if (marked)
+			{
+				mvwchgat(cmdbar->window, 0,
+							cmdbar->positions[i] - 1,
+							cmdbar->positions[i+1] - config->text_space + 1 - cmdbar->positions[i] + 1,
+							config->cursor_attr,
+							config->cursor_cpn, NULL);
+
+				accel_prop = COLOR_PAIR(config->cursor_accel_cpn) | config->cursor_accel_attr;
+				text_prop = COLOR_PAIR(config->cursor_cpn) | config->cursor_attr;
+			}
+			else
+			{
+
+				accel_prop = COLOR_PAIR(config->accelerator_cpn) | config->accelerator_attr;
+				text_prop = COLOR_PAIR(config->menu_unfocused_cpn) | config->menu_unfocused_attr;
+			}
+
+			wmove(cmdbar->window, 0, cmdbar->positions[i]);
+
+			wattron(cmdbar->window, accel_prop);
+
+			if (cmdbar->cmdbar_items[i].alt)
+			{
+				need_sep = true;
+				waddstr(cmdbar->window, "M-");
+			}
+			if (cmdbar->cmdbar_items[i].fkey > 0)
+			{
+				need_sep = true;
+				wprintw(cmdbar->window, "F%d", cmdbar->cmdbar_items[i].fkey);
+			}
+
+			wattroff(cmdbar->window, accel_prop);
+
+			wattron(cmdbar->window, text_prop);
+
+			if (need_sep)
+				waddstr(cmdbar->window, " ");
+
+			waddstr(cmdbar->window, cmdbar->cmdbar_items[i].text);
+
+			wattroff(cmdbar->window, text_prop);
+		}
 	}
 
 	wnoutrefresh(cmdbar->window);
@@ -2233,6 +2293,7 @@ static bool
 cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent)
 {
 	ST_CMDBAR_ITEM *cmdbar_item = cmdbar->cmdbar_items;
+	ST_MENU_CONFIG *config = cmdbar->config;
 	int		maxy, maxx;
 	int		i;
 	int		last_position;
@@ -2252,35 +2313,62 @@ cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent)
 
 		for (i = 0; i < cmdbar->nitems; i++)
 		{
-			if (cmdbar->positions[i] <= x && x < cmdbar->positions[i + 1])
+			int		begin_x = i > 0 ? cmdbar->positions[i] : 0;
+			int		next_begin_x = cmdbar->positions[i + 1];
+
+			if (!config->funckey_bar_style)
 			{
-				if (cmdbar->labels[i])
+				begin_x -= 1;
+				next_begin_x -= 1;
+			}
+
+			if (begin_x <= x && x < next_begin_x)
+			{
+				if (config->funckey_bar_style)
 				{
-					/*
-					 * This design is not exact, but it is good enough.
-					 * The click is valid, when press and release is over same
-					 * object.
-					 */
+					if (cmdbar->labels[i])
+					{
+						/*
+						 * This design is not exact, but it is good enough.
+						 * The click is valid, when press and release is over same
+						 * object.
+						 */
+						if (mevent->bstate & BUTTON1_PRESSED)
+						{
+							command_was_activated = false;
+							selected_command = cmdbar->ordered_items[i];
+							return true;
+						}
+						else if (mevent->bstate & BUTTON1_RELEASED)
+						{
+							if (selected_command == cmdbar->ordered_items[i])
+							{
+								command_was_activated = true;
+								return true;
+							}
+						}
+					}
+				}
+				else
+				{
 					if (mevent->bstate & BUTTON1_PRESSED)
 					{
 						command_was_activated = false;
-						selected_command = cmdbar->ordered_items[i];
+						selected_command = &cmdbar->cmdbar_items[i];
 						return true;
 					}
 					else if (mevent->bstate & BUTTON1_RELEASED)
 					{
-						if (selected_command == cmdbar->ordered_items[i])
+						if (selected_command == &cmdbar->cmdbar_items[i])
 						{
 							command_was_activated = true;
 							return true;
 						}
 					}
 				}
-				else
-				{
-					selected_command = false;
-					return false;
-				}
+
+				selected_command = false;
+				return false;
 			}
 		}
 	}
@@ -2433,6 +2521,32 @@ st_cmdbar_new(ST_MENU_CONFIG *config, ST_CMDBAR_ITEM *cmdbar_items)
 			cmdbar_item += 1;
 		}
 	}
+	else
+	{
+		last_position = config->init_text_space;
+
+		for (i = 0; i < cmdbar->nitems; i++)
+		{
+			cmdbar_item = &cmdbar_items[i];
+
+			cmdbar->positions[i] = last_position;
+
+			if (cmdbar_item->alt)
+				last_position += strlen("M-");
+			if (cmdbar_item->fkey > 0)
+				last_position += strlen("Fx");
+			if (cmdbar_item->fkey > 9)
+				last_position += strlen("0");
+
+			if (cmdbar->positions[i] != last_position)
+				last_position += 1;
+
+			last_position += str_width(config, cmdbar_item->text);
+			last_position += config->text_space != -1 ? config->text_space : 3;
+		}
+
+		cmdbar->positions[cmdbar->nitems] = last_position;
+	}
 
 	return cmdbar;
 }
@@ -2441,6 +2555,7 @@ void
 st_cmdbar_post(struct ST_CMDBAR *cmdbar)
 {
 	active_cmdbar = cmdbar;
+	cmdbar_draw(cmdbar);
 }
 
 void
