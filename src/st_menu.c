@@ -1197,10 +1197,9 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 	*unpost_submenu = false;
 
 	/* Fucus filter */
-	if (menu->focus == ST_MENU_FOCUS_MOUSE_ONLY && c != KEY_MOUSE)
-		return false;
-	else if (menu->focus == ST_MENU_FOCUS_ALT_MOUSE && c != KEY_MOUSE && !alt)
-		return false;
+	if ((menu->focus == ST_MENU_FOCUS_MOUSE_ONLY && c != KEY_MOUSE) ||
+		(menu->focus == ST_MENU_FOCUS_ALT_MOUSE && c != KEY_MOUSE && !alt))
+		goto draw_object;
 
 	/*
 	 * Propagate event to nested active object first. When nested object would be
@@ -2513,9 +2512,7 @@ st_cmdbar_new(ST_MENU_CONFIG *config, ST_CMDBAR_ITEM *cmdbar_items)
 			cmdbar->ordered_items[fkey - 1] = cmdbar_item;
 
 			display_width = cmdbar->positions[fkey] - cmdbar->positions[fkey - 1] - 2;
-
 			cmdbar->labels[fkey - 1] = safe_malloc(strlen(cmdbar_item->text) + 1);
-
 			reduce_string(config, display_width, cmdbar->labels[fkey - 1], cmdbar_item->text);
 
 			cmdbar_item += 1;
