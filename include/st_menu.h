@@ -34,6 +34,7 @@
 #define ST_MENU_FOCUS_FULL			0		/* all possible events can be processed */
 #define ST_MENU_FOCUS_ALT_MOUSE		1		/* only mouse, ALT key events */
 #define ST_MENU_FOCUS_MOUSE_ONLY	2		/* only mouse events are processed */
+#define ST_MENU_FOCUS_NONE			3		/* menu has not any focus */
 
 /*
  * Uncomment it and set for your environment when you would to

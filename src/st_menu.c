@@ -564,6 +564,15 @@ menubar_draw(struct ST_MENU *menu)
 
 	selected_item = NULL;
 
+	/* do nothing when content is invisible */
+	if (menu->focus == ST_MENU_FOCUS_NONE)
+		return;
+
+	show_panel(menu->panel);
+	top_panel(menu->panel);
+
+	update_panels();
+
 	has_focus = menu->focus == ST_MENU_FOCUS_FULL;
 	has_accelerators = menu->focus == ST_MENU_FOCUS_FULL || 
 								menu->focus == ST_MENU_FOCUS_ALT_MOUSE;
@@ -1174,11 +1183,11 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 					bool is_top, bool is_nested_pulldown,
 					bool *unpost_submenu)
 {
-	ST_MENU_CONFIG	*config = menu->config;
+	ST_MENU_CONFIG	*config;
 
-	int		cursor_row = menu->cursor_row;		/* number of active menu item */
-	bool	is_menubar = menu->is_menubar;		/* true, when processed object is menu bar */
-	int		first_row = -1;							/* number of row of first enabled item */
+	int		cursor_row;				/* number of active menu item */
+	bool	is_menubar;				/* true, when processed object is menu bar */
+	int		first_row = -1;			/* number of row of first enabled item */
 	int		last_row = -1;			/* last menu item */
 	int		mouse_row = -1;			/* item number selected by mouse */
 	int		search_row = -1;		/* code menu selected by accelerator */
@@ -1196,10 +1205,19 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 
 	*unpost_submenu = false;
 
+	/* maybe only cmdbar is used */
+	if (!menu)
+		goto post_process;
+
+	config = menu->config;
+	cursor_row = menu->cursor_row;		/* number of active menu item */
+	is_menubar = menu->is_menubar;		/* true, when processed object is menu bar */
+
 	/* Fucus filter */
 	if ((menu->focus == ST_MENU_FOCUS_MOUSE_ONLY && c != KEY_MOUSE) ||
-		(menu->focus == ST_MENU_FOCUS_ALT_MOUSE && c != KEY_MOUSE && !alt))
-		goto draw_object;
+		(menu->focus == ST_MENU_FOCUS_ALT_MOUSE && c != KEY_MOUSE && !alt) ||
+		(menu->focus == ST_MENU_FOCUS_NONE))
+		goto post_process;
 
 	/*
 	 * Propagate event to nested active object first. When nested object would be
@@ -1217,7 +1235,7 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 		 * be processed there.
 		 */
 		if (!is_menubar && c == KEY_RIGHT)
-			goto draw_object;
+			goto post_process;
 
 		/*
 		 * Submenu cannot be top object. When now is not menu bar, then now should be
@@ -1237,7 +1255,7 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 		 * level, and we should not do more work here.
 		 */
 		if (processed)
-			goto draw_object;
+			goto post_process;
 	}
 
 	/*
@@ -1615,7 +1633,7 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 	if (mouse_row != -1)
 		processed = true;
 
-draw_object:
+post_process:
 
 	/*
 	 * show content, only top object is can do this - nested objects
@@ -1633,10 +1651,11 @@ draw_object:
 			 * we can try to sent it to command bar. But with
 			 * full focus, the menubar is hungry, and we send nothing.
 			 */
-			if (active_cmdbar &&
-					(menu->focus == ST_MENU_FOCUS_MOUSE_ONLY ||
-					 menu->focus == ST_MENU_FOCUS_ALT_MOUSE))
-				processed = cmdbar_driver(active_cmdbar, c, alt, mevent);
+			if (active_cmdbar)
+			{
+				if (!menu || menu->focus != ST_MENU_FOCUS_FULL)
+					processed = cmdbar_driver(active_cmdbar, c, alt, mevent);
+			}
 		}
 
 		/*
@@ -1646,16 +1665,19 @@ draw_object:
 		if (active_cmdbar)
 			cmdbar_draw(active_cmdbar);
 
-		if (menu->is_menubar)
-			menubar_draw(menu);
-		else
-			pulldownmenu_draw(menu, true);
+		if (menu)
+		{
+			if (menu->is_menubar)
+				menubar_draw(menu);
+			else
+				pulldownmenu_draw(menu, true);
 
-		/* eat all keyboard input, when focus is full on top level */
-		if (c != KEY_MOUSE && c != KEY_RESIZE &&
-				c != ST_MENU_ESCAPE &&
-				menu->focus == ST_MENU_FOCUS_FULL)
-			processed = true;
+			/* eat all keyboard input, when focus is full on top level */
+			if (c != KEY_MOUSE && c != KEY_RESIZE &&
+					c != ST_MENU_ESCAPE &&
+					menu->focus == ST_MENU_FOCUS_FULL)
+				processed = true;
+		}
 	}
 
 	return processed;
@@ -1679,10 +1701,10 @@ st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 
 	/*
 	 * We would to close pulldown menus on F10 key - similar behave
-	 * like ESCAPE, so we can translate F10 event to ST_MENU_ESCAPE,
+	 * like SCAPE, so we can translate F10 event to ST_MENU_ESCAPE,
 	 * when menubar can accept these keys (based on focus).
 	 */
-	if (KEY_F(10) == c && menu->focus == ST_MENU_FOCUS_FULL)
+	if (menu && KEY_F(10) == c && menu->focus == ST_MENU_FOCUS_FULL)
 		c = ST_MENU_ESCAPE;
 
 	return _st_menu_driver(menu, c, alt, mevent, true, false, &aux_unpost_submenu);
@@ -2365,11 +2387,11 @@ cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent)
 						}
 					}
 				}
-
-				selected_command = false;
-				return false;
 			}
 		}
+
+		selected_command = NULL;
+		return true;
 	}
 	else
 	{
