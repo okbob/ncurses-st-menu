@@ -125,20 +125,21 @@ main()
 
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);
+	st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
 
 	/* post meubar (display it) */
 	st_menu_post(menu);
 
-	c = get_event(&mevent, &alt);
-
-	refresh();
+	/* refresh screen */
+	doupdate();
 
 	while (1)
 	{
 		bool	processed = false;
 
-		processed = st_menu_driver(menu, c, alt, &mevent);
+		c = get_event(&mevent, &alt);
 
+		processed = st_menu_driver(menu, c, alt, &mevent);
 		doupdate();
 
 		active_item = st_menu_selected_item(&activated);
@@ -149,11 +150,18 @@ main()
 				break;
 		}
 
+		if (!processed && (c == ST_MENU_ESCAPE || c == KEY_MOUSE))
+		{
+			/* Change focus type */
+			st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
+
+			/* Redraw menu */
+			st_menu_post(menu);
+			doupdate();
+		}
+
 		if (!processed && alt && c == 'x')
 			break;
-
-		/* get new event */
-		c = get_event(&mevent, &alt);
 	}
 
 	endwin();
