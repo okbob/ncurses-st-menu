@@ -5,10 +5,10 @@ all: libst_menu.so libst_menu.a demoapp demoapp_sl simple
 
 include config.make
 
-ifdef HAVE_LIBUNISTRING
-undefine UNICODE_OBJ
-#else
-UNICODE_OBJ = unicode.o
+ifeq ($(HAVE_LIBUNISTRING),yes)
+	undefine UNICODE_OBJ
+else
+	UNICODE_OBJ = unicode.o
 endif
 
 ifdef PKG_CONFIG

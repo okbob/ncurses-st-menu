@@ -3,7 +3,12 @@
 #include <ncurses.h>
 #include <panel.h>
 #include <string.h>
+
+#ifdef HAVE_LIBUNISTRING
+
 #include <unicase.h>
+
+#endif
 
 #include "st_menu.h"
 

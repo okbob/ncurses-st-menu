@@ -17,6 +17,7 @@ LDLIBS = @LIBS@ @PANEL_LIBS@ @CURSES_LIBS@ @LTLIBUNISTRING@
 LIBDIR = @libdir@
 INCLUDEDIR = @includedir@
 PKG_CONFIG = @PKG_CONFIG@
+HAVE_LIBUNISTRING = @HAVE_LIBUNISTRING@
 
 config.status: configure
 	./config.status --recheck

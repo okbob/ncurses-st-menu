@@ -4,7 +4,12 @@
 #include <panel.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_LIBUNISTRING
+
 #include <unicase.h>
+
+#endif
 
 #include "st_menu.h"
 
