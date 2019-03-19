@@ -1,6 +1,31 @@
 #include <ctype.h>
+
+#if defined HAVE_NCURSESW_CURSES_H
+#include <ncursesw/curses.h>
+#elif defined HAVE_NCURSESW_H
+#include <ncursesw.h>
+#elif defined HAVE_NCURSES_CURSES_H
+#include <ncurses/curses.h>
+#elif defined HAVE_NCURSES_H
 #include <ncurses.h>
+#elif defined HAVE_CURSES_H
+#include <curses.h>
+#else
+/* fallback */
+#include <ncurses/ncurses.h>
+#endif
+
+#if defined HAVE_NCURSESW_PANEL_H
+#include <ncursesw/panel.h>
+#elif defined HAVE_NCURSES_PANEL_H
+#include <ncurses/panel.h>
+#elif defined HAVE_PANEL_H
 #include <panel.h>
+#else
+/* fallback */
+#include <ncurses/panel.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
@@ -785,11 +810,10 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 		if (active_cmdbar)
 			overwrite(active_cmdbar->window, menu->shadow_window);
 
-
 		wmaxy = smaxy - 1;
 		wmaxx = smaxx - config->shadow_width;
 
-#if NCURSES_WIDECHAR > 0
+#if NCURSES_WIDECHAR > 0 && defined HAVE_NCURSESW
 
 		for (i = 0; i <= smaxy; i++)
 			for (j = 0; j <= smaxx; j++)
@@ -1706,7 +1730,6 @@ bool
 st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 {
 	bool		aux_unpost_submenu = false;
-	bool		processed;
 
 	/*
 	 * We should to complete mouse click based on two
@@ -2334,10 +2357,6 @@ cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent)
 {
 	ST_CMDBAR_ITEM *cmdbar_item = cmdbar->cmdbar_items;
 	ST_MENU_CONFIG *config = cmdbar->config;
-	int		maxy, maxx;
-	int		i;
-	int		last_position;
-	int		aux_counter;
 
 	if (c == KEY_MOUSE && mevent->bstate & (BUTTON1_PRESSED | BUTTON1_RELEASED))
 	{
@@ -2448,7 +2467,6 @@ st_cmdbar_new(ST_MENU_CONFIG *config, ST_CMDBAR_ITEM *cmdbar_items)
 	int		maxy, maxx;
 	int		i;
 	int		last_position;
-	int		aux_counter;
 
 	cmdbar = safe_malloc(sizeof(struct ST_CMDBAR));
 
@@ -2624,4 +2642,3 @@ void st_cmdbar_free(struct ST_CMDBAR *cmdbar)
 
 	update_panels();
 }
-
