@@ -748,6 +748,42 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn)
 			config->shadow_width = 2;
 
 			break;
+
+		case ST_MENU_STYLE_MENUWORKS:
+			config->menu_background_cpn = start_from_cpn;
+			config->menu_background_attr = islc(COLOR_WHITE, COLOR_RED);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			config->menu_unfocused_attr = islc(COLOR_WHITE, COLOR_BLACK);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			config->menu_shadow_attr = 0;
+			init_pair(start_from_cpn++, COLOR_BLUE, COLOR_BLACK);
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = A_UNDERLINE | islc(COLOR_YELLOW, COLOR_RED);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = islc(COLOR_YELLOW, COLOR_BLACK);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = A_UNDERLINE | islc(COLOR_YELLOW, COLOR_BLACK);
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = A_DIM | islc(COLOR_WHITE, COLOR_RED);
+
+			config->left_alligned_shortcuts = true;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+			config->extra_inner_space = false;
+
+			config->shortcut_space = 5;
+			config->text_space = 5;
+			config->init_text_space = 2;
+			config->menu_bar_menu_offset = 1;
+			config->shadow_width = 2;
+
+			break;
 	}
 
 	return start_from_cpn;

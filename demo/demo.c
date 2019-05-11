@@ -236,6 +236,7 @@ main()
 		{"_f_Free Dos", 83, NULL, ST_MENU_STYLE_FREE_DOS, THEME_GROUP},
 		{"_m_Midnight46", 84, NULL, ST_MENU_STYLE_MC46, THEME_GROUP},
 		{"_d_Dbase", 85, NULL, ST_MENU_STYLE_DBASE, THEME_GROUP},
+		{"_w_MenuWorks", 86, NULL, ST_MENU_STYLE_MENUWORKS, THEME_GROUP},
 		{NULL, -1, NULL}
 	};
 
