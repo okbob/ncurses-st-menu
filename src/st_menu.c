@@ -262,7 +262,15 @@ chr_casexfrm(ST_MENU_CONFIG *config, char *str)
 									config->language, NULL,
 									buffer, &length);
 		if (result == buffer)
+		{
 			result = strdup(buffer);
+			if (!result)
+			{
+				endwin();
+				printf("FATAL: out of memory\n");
+				exit(1);
+			}
+		}
 
 #else
 
@@ -279,6 +287,12 @@ chr_casexfrm(ST_MENU_CONFIG *config, char *str)
 		buffer[sizeof(int)] = '\0';
 
 		result = strdup(buffer);
+		if (!result)
+		{
+			endwin();
+			printf("FATAL: out of memory\n");
+			exit(1);
+		}
 
 #endif
 	}
@@ -288,6 +302,12 @@ chr_casexfrm(ST_MENU_CONFIG *config, char *str)
 		buffer[1] = '\0';
 
 		result = strdup(buffer);
+		if (!result)
+		{
+			endwin();
+			printf("FATAL: out of memory\n");
+			exit(1);
+		}
 	}
 
 	return result;
