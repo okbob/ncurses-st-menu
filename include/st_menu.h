@@ -57,7 +57,7 @@ extern int		debug_eventno;
 
 #endif
 
-typedef struct _ST_MENU_ITEM
+typedef struct st_ST_MENU_ITEM
 {
 	char	*text;						/* text of menu item, possible specify accelerator by ~ */
 	int		code;						/* code of menu item (optional) */
@@ -65,7 +65,7 @@ typedef struct _ST_MENU_ITEM
 	int		data;						/* allow to assign some value to menu item (optional) */
 	char	group;						/* specify semantics of data value (optional) */
 	int		options;					/* locked, marked, ... (optional) */
-	struct _ST_MENU_ITEM *submenu;		/* reference to nested menu (optional) */
+	struct st_ST_MENU_ITEM *submenu;		/* reference to nested menu (optional) */
 } ST_MENU_ITEM;
 
 typedef struct
