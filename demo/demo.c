@@ -237,6 +237,7 @@ main()
 		{"_m_Midnight46", 84, NULL, ST_MENU_STYLE_MC46, THEME_GROUP},
 		{"_d_Dbase", 85, NULL, ST_MENU_STYLE_DBASE, THEME_GROUP},
 		{"_w_MenuWorks", 86, NULL, ST_MENU_STYLE_MENUWORKS, THEME_GROUP},
+		{"_a_Tao", 87, NULL, ST_MENU_STYLE_TAO, THEME_GROUP},
 		{NULL, -1, NULL}
 	};
 
@@ -311,7 +312,7 @@ main()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
-	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2);
+	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2, NULL);
 
 #ifdef NCURSES_EXT_FUNCS
 
@@ -431,6 +432,7 @@ main()
 				int		cursor_store[1024];
 				int		fcp = 2;
 				int		menu_code = active_item->code;
+				int		start_from_rgb = 200;
 
 				style = active_item->data;
 
@@ -448,11 +450,13 @@ main()
 				if (style == ST_MENU_STYLE_FREE_DOS)
 					fcp = st_menu_load_style(&config_b,
 												ST_MENU_STYLE_FREE_DOS_P,
-												style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp);
+												style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp,
+												&start_from_rgb);
 
 				st_menu_load_style(&config,
 										style,
-										style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp);
+										style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp,
+										&start_from_rgb);
 
 				menu = st_menu_new_menubar2(&config, style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 

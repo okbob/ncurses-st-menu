@@ -122,7 +122,7 @@ Available styles:
 ## API
 
 ```c
-extern int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn);
+extern int st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn, int *start_from_rgb);
 extern void st_menu_set_desktop_panel(PANEL *pan);
 
 extern struct ST_MENU *st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *items, int begin_y, int begin_x, char *title);
@@ -149,7 +149,8 @@ extern bool st_menu_reset_all_options(struct ST_MENU *menu, int option);
 ## Description
 
 * `st_menu_load_style` - fill ST_MENU_CONFIG from predefined styles. `start_from_cpn` is first free
-  color pair. This function returns next free color pair.
+  color pair. This function returns next free color pair. `start_from_rgb` is pointer to int numer
+  used for redefine own rgb colours (it's necessary for Hi colour themes).
 
 * `st_menu_set_desktop_panel` - allow to specify some panel used like desktop. The content of 
    related window is used as source for shadow drawing.
