@@ -312,7 +312,7 @@ main()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
-	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2, NULL);
+	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2);
 
 #ifdef NCURSES_EXT_FUNCS
 
@@ -450,10 +450,9 @@ main()
 				if (style == ST_MENU_STYLE_FREE_DOS)
 					fcp = st_menu_load_style(&config_b,
 												ST_MENU_STYLE_FREE_DOS_P,
-												style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp,
-												&start_from_rgb);
+												style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp);
 
-				st_menu_load_style(&config,
+				st_menu_load_style_rgb(&config,
 										style,
 										style == ST_MENU_STYLE_ONECOLOR ? 1 : fcp,
 										&start_from_rgb);
