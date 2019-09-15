@@ -803,7 +803,7 @@ st_menu_load_style(ST_MENU_CONFIG *config, int style, int start_from_cpn, int *s
 
 				*start_from_rgb += 5;
 
-				init_color_rgb_ff(_start_from_rgb + 0, 0xf9, 0xf9, 0xf9); /* menu bg */
+				init_color_rgb_ff(_start_from_rgb + 0, 0xfa, 0xfa, 0xfa); /* menu bg */
 				init_color_rgb_ff(_start_from_rgb + 1, 0x17, 0x17, 0x17); /* menu fg */
 				init_color_rgb_ff(_start_from_rgb + 2, 0x4e, 0x4e, 0x4e); /* cursor bg */
 				init_color_rgb_ff(_start_from_rgb + 3, 0xaa, 0xaa, 0xaa); /* shadow */
