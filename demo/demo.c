@@ -239,6 +239,7 @@ main()
 		{"_w_MenuWorks", 86, NULL, ST_MENU_STYLE_MENUWORKS, THEME_GROUP},
 		{"_a_Tao", 87, NULL, ST_MENU_STYLE_TAO, THEME_GROUP},
 		{"_g_Gold", 88, NULL, ST_MENU_STYLE_XGOLD, THEME_GROUP},
+		{"_b_Gold (black)", 89, NULL, ST_MENU_STYLE_XGOLD_BLACK, THEME_GROUP},
 		{NULL, -1, NULL}
 	};
 

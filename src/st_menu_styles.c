@@ -879,6 +879,7 @@ st_menu_load_style_rgb(ST_MENU_CONFIG *config, int style, int start_from_cpn, in
 			config->init_text_space = 2;
 			config->menu_bar_menu_offset = 1;
 			config->shadow_width = 2;
+
 			break;
 
 		case ST_MENU_STYLE_XGOLD:
@@ -889,17 +890,17 @@ st_menu_load_style_rgb(ST_MENU_CONFIG *config, int style, int start_from_cpn, in
 			init_pair(start_from_cpn++, COLOR_BLUE, COLOR_CYAN);
 
 			config->menu_shadow_cpn = start_from_cpn;
-			config->menu_shadow_attr = 0;
-			init_pair(start_from_cpn++, COLOR_BLUE, COLOR_BLACK);
+			init_pair(start_from_cpn++, COLOR_CYAN, COLOR_BLUE);
+			config->menu_shadow_attr = A_DIM | A_REVERSE;
 
 			config->accelerator_cpn = start_from_cpn;
 			config->accelerator_attr = islc(COLOR_YELLOW, COLOR_CYAN);
 
 			config->cursor_cpn = start_from_cpn;
-			config->cursor_attr = islc(COLOR_WHITE, COLOR_WHITE);
+			config->cursor_attr = islc(COLOR_WHITE, COLOR_BLUE);
 
 			config->cursor_accel_cpn = start_from_cpn;
-			config->cursor_accel_attr = islc(COLOR_WHITE, COLOR_WHITE);
+			config->cursor_accel_attr = islc(COLOR_WHITE, COLOR_BLUE);
 
 			config->disabled_cpn = start_from_cpn;
 			config->disabled_attr = islc(COLOR_BLACK, COLOR_CYAN);
@@ -917,6 +918,48 @@ st_menu_load_style_rgb(ST_MENU_CONFIG *config, int style, int start_from_cpn, in
 
 			config->submenu_offset_y = 0;
 			config->submenu_offset_x = 0;
+
+			break;
+
+		case ST_MENU_STYLE_XGOLD_BLACK:
+			config->menu_background_cpn = start_from_cpn;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->menu_unfocused_cpn = start_from_cpn;
+			init_pair(start_from_cpn++, COLOR_BLACK, COLOR_CYAN);
+
+			config->menu_shadow_cpn = start_from_cpn;
+			init_pair(start_from_cpn++, COLOR_CYAN, COLOR_BLUE);
+			config->menu_shadow_attr = A_DIM | A_REVERSE;
+
+			config->accelerator_cpn = start_from_cpn;
+			config->accelerator_attr = islc(COLOR_YELLOW, COLOR_CYAN);
+
+			config->cursor_cpn = start_from_cpn;
+			config->cursor_attr = islc(COLOR_WHITE, COLOR_BLUE);
+
+			config->cursor_accel_cpn = start_from_cpn;
+			config->cursor_accel_attr = islc(COLOR_WHITE, COLOR_BLUE);
+
+			config->disabled_cpn = start_from_cpn;
+			config->disabled_attr = islc(COLOR_BLACK, COLOR_CYAN);
+
+			config->left_alligned_shortcuts = false;
+			config->wide_vborders = false;
+			config->wide_hborders = false;
+			config->extra_inner_space = false;
+
+			config->shortcut_space = 4;
+			config->text_space = 2;
+			config->init_text_space = 2;
+			config->menu_bar_menu_offset = 0;
+			config->shadow_width = 2;
+
+			config->submenu_offset_y = 0;
+			config->submenu_offset_x = 0;
+
+			break;
+
 	}
 
 	return start_from_cpn;
