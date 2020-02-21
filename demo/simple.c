@@ -1,7 +1,7 @@
 #include <langinfo.h>
 #include <locale.h>
-#include <ncurses.h>
-#include <panel.h>
+#include "st_curses.h"
+#include "st_panel.h"
 #include <string.h>
 
 #ifdef HAVE_LIBUNISTRING

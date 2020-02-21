@@ -1,7 +1,7 @@
 #include <langinfo.h>
 #include <locale.h>
-#include <ncurses.h>
-#include <panel.h>
+#include "st_curses.h"
+#include "st_panel.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -52,7 +52,7 @@ get_event(MEVENT *mevent, bool *alt)
 
 #endif
 
-#if NCURSES_WIDECHAR > 0
+#if defined(NCURSES_WIDECHAR) && (defined(HAVE_NCURSESW_CURSES_H) || defined(HAVE_NCURSESW_H))
 
 	wint_t	ch;
 	int		ret;
@@ -63,7 +63,7 @@ get_event(MEVENT *mevent, bool *alt)
 
 repeat:
 
-#if NCURSES_WIDECHAR > 0
+#if defined(NCURSES_WIDECHAR) && (defined(HAVE_NCURSESW_CURSES_H) || defined(HAVE_NCURSESW_H))
 
 	ret = get_wch(&ch);
 	(void) ret;

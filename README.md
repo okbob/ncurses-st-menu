@@ -1,3 +1,88 @@
+# Reason for Fork
+
+The main goal of the fork was to make the code compatible with [PDcurses](https://github.com/wmcbrine/PDCurses).
+
+Some changes are:
+- consolidated the inclusion of the curses/panel headers
+- add a couple #defines to add ncurses APIs missing from PDcurses
+- changed `st_menu.c` so to use `newwin2` which has been created to better handle windows that are out of the screen size.  PDCurses will not allocate the window which causes crashes--ncurses appears to allocate the window just fine.
+- since this a pdcurses fork, there are additional configure arguments needed (see below)
+- removed some generated files from the github repo
+
+
+## Building PDCurses
+
+This is a simple overview on building PDcurses from source.  For the latest info refer to the SDL repo/README files.
+
+### X11
+
+```
+cd PDCurses/x11
+./configure
+make
+```
+
+
+
+
+## Building for PDCurses
+
+To build for PDCurses you need to first need some added agruments for the `configure` prior to the make.  The configure options are defined as:
+
+PDCURSES_INSTALL    If you have the PDCurses libs/headers installed you can 
+                    simple use just this flag.  The other options will be
+                    filled in for you.  Currently support: "x11"
+                    NOTE: Other arguments not needed.
+PDCURSES_INCDIR     Directory containing the curses/panel headers
+PDCURSES_LIBDIR     Directory containing the PDCurses library
+PDCURSES_LIB        Name of the PDCurses library, defaults to 'XCurses'
+PDCURSES_DEP_LIBS   List of the PDCurses dependant library (exclude PDCURSES_LIB),
+                    'XCurses' is already handled.
+ 
+NOTE: If you are pointing to the PDCurses github directory built for
+      a specific OS/terminal you can omit the PDCURSES_INCDIR.
+
+
+This example builds from installed PDCurses for X11:
+NOTE: The build tools will setup all the other `PDCURSES_xxx` arguments for us.
+
+```
+PDCURSES_INSTALL=x11 ./configure
+make
+```
+
+This example builds from PDCurses source for X11:
+NOTE: PDCURSES_LIB defaults to XCurses so we don't need to specify it
+
+```
+PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 ./configure
+make
+```
+
+This is a complete example (ignores the fact that some variables are not needed:
+```
+PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 \
+PDCURSES_INCDIR=/home/username/github/PDCurses \
+PDCURSES_LIB=XCurses \
+PDCURSES_DEP_LIBS=Xaw Xmu Xt X11 Xpm SM ICE Xext \
+./configure
+make
+```
+
+NOTE: To generate a debug build append `--enable-debug` to the configure statement.
+
+## Building for NCurses
+
+This assumes the NCurses library/headers are installed:
+NOTE: Unlike the PDCurses build, the `configure` needs nothing special (for most cases)
+
+```
+./configure
+make
+```
+
+-----------------------
+
 # ncurses-st-menu 
 
 modern and simple ncurses based library for CUA look menu

@@ -16,24 +16,29 @@ AM_PROG_AR
 AC_HEADER_STDC
 
 AX_DEBUG_CFLAGS
-AX_WITH_CURSES
-AX_WITH_CURSES_PANEL
+AX_PDCURSES
+
+if test "$ax_cv_pdcurses" = "no"; then
+	AC_MSG_NOTICE([NCurses build...])
+
+    AX_WITH_CURSES
+    AX_WITH_CURSES_PANEL
+
+    case "$ax_cv_ncurses" in "no")
+    	AC_MSG_ERROR([ncurses not found])
+    esac
+    case "$ax_cv_ncursesw" in "no")
+    	AC_MSG_WARN([The found ncurses library does not support wide-char.])
+    	AC_MSG_WARN([This means that tig will not correctly render UTF-8.])
+    esac
+
+    if test "$ax_cv_panel" = "no"; then
+    	AC_MSG_ERROR([ncurses panel library not found])
+    fi
+fi
 
 # requires gettext-devel
 gl_LIBUNISTRING
-
-case "$ax_cv_ncurses" in "no")
-	AC_MSG_ERROR([ncurses not found])
-esac
-case "$ax_cv_ncursesw" in "no")
-	AC_MSG_WARN([The found ncurses library does not support wide-char.])
-	AC_MSG_WARN([This means that tig will not correctly render UTF-8.])
-esac
-
-if test "$ax_cv_panel" = "no"; then
-	AC_MSG_ERROR([ncurses panel library not found])
-fi
-
 
 AC_SUBST(enable_debug)
 AC_SUBST(CURSES_LIBS)
