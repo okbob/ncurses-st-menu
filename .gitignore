@@ -35,6 +35,9 @@
 *.i*86
 *.x86_64
 *.hex
+demoapp
+demoapp_sl
+simple
 
 # Debug files
 *.dSYM/
@@ -55,3 +58,5 @@ pspg
 /config.cache
 /config.log
 /config.status
+/config.make
+/st_menu.pc
