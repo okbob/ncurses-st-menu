@@ -11,10 +11,11 @@ else
 	UNICODE_OBJ = unicode.o
 endif
 
-
 ifeq ($(BUILD_OS),windows)
 	PROG_EXT=.exe
 	DLL_EXT=.dll
+else
+	DLL_EXT=.so
 endif
 
 ifdef PKG_CONFIG
@@ -70,12 +71,8 @@ demoapp: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
 	$(CC) demo/demo.c -o demoapp libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
 
 demoapp_sl: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
-ifeq "$(BUILD_OS)" "windows"
-	@printf "\nSkipping: $@...\n"
-else
 	@printf "\nBuilding: $@...\n"
-	$(CC) demo/demo.c -o demoapp_sl $(UNICODE_OBJ) $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(ST_LIBDIRS) -lst_menu $(NCURSES_PANEL_LIB) $(CFLAGS)
-endif
+	$(CC) demo/demo.c -o demoapp_sl $(UNICODE_OBJ) -lst_menu $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(ST_LIBDIRS) $(NCURSES_PANEL_LIB) $(CFLAGS)
 
 simple: demo/simple.c libst_menu.a include/st_menu.h
 	@printf "\nBuilding: $@...\n"
