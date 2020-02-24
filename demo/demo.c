@@ -1,11 +1,7 @@
-
-#ifndef BUILD_OS_WIN
 #include <langinfo.h>
-#endif
-
 #include <locale.h>
-#include "st_curses.h"
-#include "st_panel.h"
+#include <ncurses.h>
+#include <panel.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -56,7 +52,7 @@ get_event(MEVENT *mevent, bool *alt)
 
 #endif
 
-#if defined(NCURSES_WIDECHAR) && (defined(HAVE_NCURSESW_CURSES_H) || defined(HAVE_NCURSESW_H))
+#if NCURSES_WIDECHAR > 0
 
 	wint_t	ch;
 	int		ret;
@@ -67,7 +63,7 @@ get_event(MEVENT *mevent, bool *alt)
 
 repeat:
 
-#if defined(NCURSES_WIDECHAR) && (defined(HAVE_NCURSESW_CURSES_H) || defined(HAVE_NCURSESW_H))
+#if NCURSES_WIDECHAR > 0
 
 	ret = get_wch(&ch);
 	(void) ret;
@@ -291,12 +287,8 @@ main()
 
 	setlocale(LC_ALL, "");
 
-	#ifndef BUILD_OS_WIN
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
-	#else
-	config.encoding = "";
-	#endif
 
 #ifdef LIBUNISTRING
 

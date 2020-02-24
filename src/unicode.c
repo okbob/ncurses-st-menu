@@ -274,7 +274,7 @@ utf8_to_unicode(const unsigned char *c)
 						   (c[3] & 0x3f));
 	else
 		/* that is an invalid code on purpose */
-		return (wchar_t) 0xffffffff;
+		return 0xffffffff;
 }
 
 int

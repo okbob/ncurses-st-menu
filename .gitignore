@@ -35,16 +35,12 @@
 *.i*86
 *.x86_64
 *.hex
-demoapp
-demoapp_sl
-simple
 
 # Debug files
 *.dSYM/
 *.su
 *.idb
 *.pdb
-.vscode
 
 # Kernel Module Compile Results
 *.mod*
@@ -56,9 +52,6 @@ Mkfile.old
 dkms.conf
 pspg
 
-/autom4te.cache/**
 /config.cache
 /config.log
 /config.status
-/config.make
-/st_menu.pc

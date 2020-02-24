@@ -599,20 +599,6 @@ LIBUNISTRING
 HAVE_LIBUNISTRING
 LTLIBICONV
 LIBICONV
-PANEL_LIBS
-PKG_CONFIG_LIBDIR
-PKG_CONFIG_PATH
-PKG_CONFIG
-CURSES_CFLAGS
-CURSES_LIBS
-XCURSES_CONFIG
-HAVE_PDCURSES
-BUILD_OS
-PDCURSES_DEP_LIBS
-PDCURSES_LIB
-PDCURSES_LIBDIR
-PDCURSES_INCDIR
-PDCURSES_INSTALL
 host_os
 host_vendor
 host_cpu
@@ -621,6 +607,12 @@ build_os
 build_vendor
 build_cpu
 build
+PANEL_LIBS
+PKG_CONFIG_LIBDIR
+PKG_CONFIG_PATH
+PKG_CONFIG
+CURSES_CFLAGS
+CURSES_LIBS
 DEBUG_CFLAGS
 EGREP
 GREP
@@ -653,7 +645,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -693,11 +684,6 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP
-PDCURSES_INSTALL
-PDCURSES_INCDIR
-PDCURSES_LIBDIR
-PDCURSES_LIB
-PDCURSES_DEP_LIBS
 CURSES_LIBS
 CURSES_CFLAGS
 PKG_CONFIG
@@ -742,7 +728,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -995,15 +980,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1141,7 +1117,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1294,7 +1270,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1351,19 +1326,6 @@ Some influential environment variables:
   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
               you have headers in a nonstandard directory <include dir>
   CPP         C preprocessor
-  PDCURSES_INSTALL
-              If you have the PDCurses libs/headers installed you can simple
-              use just this flag. The other options will be filled in for you.
-              Currently support: 'x11'
-  PDCURSES_INCDIR
-              Directory containing the curses/panel headers
-  PDCURSES_LIBDIR
-              Directory containing the PDCurses library
-  PDCURSES_LIB
-              Name of the PDCurses library, defaults to 'libXCurses' (Linux),
-              'pdcurses' (Windows)
-  PDCURSES_DEP_LIBS
-              List of the PDCurses dependant library (exclude PDCURSES_LIB).
   CURSES_LIBS linker library for Curses, e.g. -lcurses
   CURSES_CFLAGS
               preprocessor flags for Curses, e.g. -I/usr/include/ncursesw
@@ -4156,455 +4118,6 @@ DEBUG_CFLAGS=$DEBUG_CFLAGS
 
 
 
-# Make sure we can run config.sub.
-$SHELL "$ac_aux_dir/config.sub" sun4 >/dev/null 2>&1 ||
-  as_fn_error $? "cannot run $SHELL $ac_aux_dir/config.sub" "$LINENO" 5
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking build system type" >&5
-$as_echo_n "checking build system type... " >&6; }
-if ${ac_cv_build+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_build_alias=$build_alias
-test "x$ac_build_alias" = x &&
-  ac_build_alias=`$SHELL "$ac_aux_dir/config.guess"`
-test "x$ac_build_alias" = x &&
-  as_fn_error $? "cannot guess build type; you must specify one" "$LINENO" 5
-ac_cv_build=`$SHELL "$ac_aux_dir/config.sub" $ac_build_alias` ||
-  as_fn_error $? "$SHELL $ac_aux_dir/config.sub $ac_build_alias failed" "$LINENO" 5
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_build" >&5
-$as_echo "$ac_cv_build" >&6; }
-case $ac_cv_build in
-*-*-*) ;;
-*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5;;
-esac
-build=$ac_cv_build
-ac_save_IFS=$IFS; IFS='-'
-set x $ac_cv_build
-shift
-build_cpu=$1
-build_vendor=$2
-shift; shift
-# Remember, the first character of IFS is used to create $*,
-# except with old shells:
-build_os=$*
-IFS=$ac_save_IFS
-case $build_os in *\ *) build_os=`echo "$build_os" | sed 's/ /-/g'`;; esac
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking host system type" >&5
-$as_echo_n "checking host system type... " >&6; }
-if ${ac_cv_host+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "x$host_alias" = x; then
-  ac_cv_host=$ac_cv_build
-else
-  ac_cv_host=`$SHELL "$ac_aux_dir/config.sub" $host_alias` ||
-    as_fn_error $? "$SHELL $ac_aux_dir/config.sub $host_alias failed" "$LINENO" 5
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_host" >&5
-$as_echo "$ac_cv_host" >&6; }
-case $ac_cv_host in
-*-*-*) ;;
-*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5;;
-esac
-host=$ac_cv_host
-ac_save_IFS=$IFS; IFS='-'
-set x $ac_cv_host
-shift
-host_cpu=$1
-host_vendor=$2
-shift; shift
-# Remember, the first character of IFS is used to create $*,
-# except with old shells:
-host_os=$*
-IFS=$ac_save_IFS
-case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
-
-
-
-
-    # USed to get 'host_os'
-
-
-
-
-
-
-
-
-    # For use outside this script in configure.ac
-    ax_cv_pdcurses=no
-
-    # Detect the target system
-    case "${host_os}" in
-        linux*)
-            ax_cv_build=linux
-            BUILD_OS="linux"
-
-
-$as_echo "#define BUILD_OS_LINUX 1" >>confdefs.h
-
-            ;;
-        cygwin*|mingw*)
-            ax_cv_build=windows
-            BUILD_OS="windows"
-
-
-$as_echo "#define BUILD_OS_WIN 1" >>confdefs.h
-
-            ;;
-        #darwin*)
-        #    ax_cv_build=mac
-        #    AC_SUBST(BUILD_OS, "mac")
-        #    ;;
-        *)
-            as_fn_error $? "\"OS $host_os is not supported\"" "$LINENO" 5
-            ;;
-    esac
-
-    # Available in the makefile
-    HAVE_PDCURSES="no"
-
-
-    if test "$PDCURSES_INSTALL" = "x11"; then :
-
-
-        # See if xcurses-config exists, if so, build for X11
-        if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}xcurses-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}xcurses-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_XCURSES_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $XCURSES_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_XCURSES_CONFIG="$XCURSES_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_XCURSES_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-XCURSES_CONFIG=$ac_cv_path_XCURSES_CONFIG
-if test -n "$XCURSES_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XCURSES_CONFIG" >&5
-$as_echo "$XCURSES_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_XCURSES_CONFIG"; then
-  ac_pt_XCURSES_CONFIG=$XCURSES_CONFIG
-  # Extract the first word of "xcurses-config", so it can be a program name with args.
-set dummy xcurses-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_ac_pt_XCURSES_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $ac_pt_XCURSES_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_XCURSES_CONFIG="$ac_pt_XCURSES_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_ac_pt_XCURSES_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_XCURSES_CONFIG=$ac_cv_path_ac_pt_XCURSES_CONFIG
-if test -n "$ac_pt_XCURSES_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_XCURSES_CONFIG" >&5
-$as_echo "$ac_pt_XCURSES_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_pt_XCURSES_CONFIG" = x; then
-    XCURSES_CONFIG=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    XCURSES_CONFIG=$ac_pt_XCURSES_CONFIG
-  fi
-else
-  XCURSES_CONFIG="$ac_cv_path_XCURSES_CONFIG"
-fi
-
-        if test -n "$XCURSES_CONFIG"; then
-            { $as_echo "$as_me:${as_lineno-$LINENO}: Building for PDCurses X11" >&5
-$as_echo "$as_me: Building for PDCurses X11" >&6;}
-            PDCURSES_INSTALL=x11
-            # NOTE: We don't use xcurses-config output only because
-            #       the project was setup and working prior to this
-            #       change.  If others want to do this that is fine.
-            xcurses_prefix=`xcurses-config --prefix`
-
-            if test "x$PDCURSES_LIBDIR" = x; then :
-
-                # Not set so we will do so
-                PDCURSES_LIBDIR=$xcurses_prefix/lib
-
-fi
-            if test "x$PDCURSES_INCDIR" = x; then :
-
-                # Not set so we will do so
-                PDCURSES_INCDIR=$xcurses_prefix/include/xcurses
-
-fi
-        fi
-
-        PDCURSES_LIB="libXCurses"
-        PDCURSES_DEP_LIBS="Xaw Xmu Xt X11 Xpm SM ICE Xext"
-
-$as_echo "#define XCURSES 1" >>confdefs.h
-
-
-fi
-
-    # Assign a default value if missing
-    if test "x$PDCURSES_LIBDIR" != x; then :
-
-        if test "x$PDCURSES_INCDIR" = x; then :
-
-            # This is typical if build from source and not installed
-            PDCURSES_INCDIR="$PDCURSES_LIBDIR/.."
-
-fi
-
-fi
-    if test "x$PDCURSES_LIB" = x; then :
-
-        PDCURSES_LIB="libXCurses"
-        if test "$ax_cv_build" = "windows"; then :
-
-            PDCURSES_LIB="pdcurses"
-
-fi
-
-fi
-
-    # PDCURSES_DEP_LIBS not set set set this up if known
-    if test "x$PDCURSES_DEP_LIBS" = x; then :
-
-        # These are the ones we know...
-        if test "$PDCURSES_LIB" = "libXCurses"; then :
-
-            PDCURSES_DEP_LIBS="Xaw Xmu Xt X11 Xpm SM ICE Xext"
-
-$as_echo "#define XCURSES 1" >>confdefs.h
-
-
-else
-
-            if test "$PDCURSES_LIB" = "pdcurses"; then :
-
-                PDCURSES_DEP_LIBS=""
-
-else
-
-                as_fn_error $? "PDCURSES_DEP_LIBS must be set" "$LINENO" 5
-
-fi
-
-fi
-
-fi
-
-    if test "x$PDCURSES_LIBDIR" != x; then :
-
-
-        ax_cv_pdcurses=yes
-        HAVE_PDCURSES="yes"
-
-
-        # Adds a CFLAG (-DPDCURSES=1 etc)
-
-$as_echo "#define PDCURSES 1" >>confdefs.h
-
-
-$as_echo "#define _BSD_SOURCE 1" >>confdefs.h
-
-
-        # Check for the PDCurses library
-        if test "x$PDCURSES_LIBDIR" != x; then :
-
-            as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_LIBDIR/$PDCURSES_LIB.a"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_LIBDIR/$PDCURSES_LIB.a\"" >&5
-$as_echo_n "checking for \"$PDCURSES_LIBDIR/$PDCURSES_LIB.a\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_LIBDIR/$PDCURSES_LIB.a""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-else
-
-                as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_LIBDIR/pdcurses.a"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_LIBDIR/pdcurses.a\"" >&5
-$as_echo_n "checking for \"$PDCURSES_LIBDIR/pdcurses.a\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_LIBDIR/pdcurses.a""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-                  PDCURSES_LIB="pdcurses"
-
-else
-
-                  as_fn_error $? "could not find a $PDCURSES_LIBDIR/$PDCURSES_LIB.a | pdcurses.a" "$LINENO" 5
-
-fi
-
-
-fi
-
-
-fi
-
-        # Check for the PDCurses headers
-        if test "x$PDCURSES_INCDIR" != x; then :
-
-            as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_INCDIR/curses.h"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_INCDIR/curses.h\"" >&5
-$as_echo_n "checking for \"$PDCURSES_INCDIR/curses.h\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_INCDIR/curses.h""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-
-$as_echo "#define HAVE_CURSES_H 1" >>confdefs.h
-
-
-else
-
-                as_fn_error $? "could not find the PDcurses header $PDCURSES_INCDIR/curses.h" "$LINENO" 5
-
-fi
-
-            as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_INCDIR/panel.h"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_INCDIR/panel.h\"" >&5
-$as_echo_n "checking for \"$PDCURSES_INCDIR/panel.h\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_INCDIR/panel.h""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-
-$as_echo "#define HAVE_PANEL_H 1" >>confdefs.h
-
-
-else
-
-                as_fn_error $? "could not find the PDcurses header $PDCURSES_INCDIR/panel.h" "$LINENO" 5
-
-fi
-
-
-fi
-
-fi
-
-    # If not using PDCurses just clear the PDCURSES_LIB
-    if test "$HAVE_PDCURSES" = "no"; then :
-
-        PDCURSES_LIB=""
-
-fi
-
-
-
-if test "$ax_cv_pdcurses" = "no"; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: NCurses build..." >&5
-$as_echo "$as_me: NCurses build..." >&6;}
-
 
 
 
@@ -6207,22 +5720,78 @@ fi
 
 
 
-    case "$ax_cv_ncurses" in "no")
-    	as_fn_error $? "ncurses not found" "$LINENO" 5
-    esac
-    case "$ax_cv_ncursesw" in "no")
-    	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The found ncurses library does not support wide-char." >&5
-$as_echo "$as_me: WARNING: The found ncurses library does not support wide-char." >&2;}
-    	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This means that tig will not correctly render UTF-8." >&5
-$as_echo "$as_me: WARNING: This means that tig will not correctly render UTF-8." >&2;}
-    esac
+# requires gettext-devel
+# Make sure we can run config.sub.
+$SHELL "$ac_aux_dir/config.sub" sun4 >/dev/null 2>&1 ||
+  as_fn_error $? "cannot run $SHELL $ac_aux_dir/config.sub" "$LINENO" 5
 
-    if test "$ax_cv_panel" = "no"; then
-    	as_fn_error $? "ncurses panel library not found" "$LINENO" 5
-    fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking build system type" >&5
+$as_echo_n "checking build system type... " >&6; }
+if ${ac_cv_build+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_build_alias=$build_alias
+test "x$ac_build_alias" = x &&
+  ac_build_alias=`$SHELL "$ac_aux_dir/config.guess"`
+test "x$ac_build_alias" = x &&
+  as_fn_error $? "cannot guess build type; you must specify one" "$LINENO" 5
+ac_cv_build=`$SHELL "$ac_aux_dir/config.sub" $ac_build_alias` ||
+  as_fn_error $? "$SHELL $ac_aux_dir/config.sub $ac_build_alias failed" "$LINENO" 5
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_build" >&5
+$as_echo "$ac_cv_build" >&6; }
+case $ac_cv_build in
+*-*-*) ;;
+*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5;;
+esac
+build=$ac_cv_build
+ac_save_IFS=$IFS; IFS='-'
+set x $ac_cv_build
+shift
+build_cpu=$1
+build_vendor=$2
+shift; shift
+# Remember, the first character of IFS is used to create $*,
+# except with old shells:
+build_os=$*
+IFS=$ac_save_IFS
+case $build_os in *\ *) build_os=`echo "$build_os" | sed 's/ /-/g'`;; esac
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking host system type" >&5
+$as_echo_n "checking host system type... " >&6; }
+if ${ac_cv_host+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test "x$host_alias" = x; then
+  ac_cv_host=$ac_cv_build
+else
+  ac_cv_host=`$SHELL "$ac_aux_dir/config.sub" $host_alias` ||
+    as_fn_error $? "$SHELL $ac_aux_dir/config.sub $host_alias failed" "$LINENO" 5
 fi
 
-# requires gettext-devel
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_host" >&5
+$as_echo "$ac_cv_host" >&6; }
+case $ac_cv_host in
+*-*-*) ;;
+*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5;;
+esac
+host=$ac_cv_host
+ac_save_IFS=$IFS; IFS='-'
+set x $ac_cv_host
+shift
+host_cpu=$1
+host_vendor=$2
+shift; shift
+# Remember, the first character of IFS is used to create $*,
+# except with old shells:
+host_os=$*
+IFS=$ac_save_IFS
+case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
+
+
 
       if test "X$prefix" = "XNONE"; then
     acl_final_prefix="$ac_default_prefix"
@@ -9006,6 +8575,21 @@ $as_echo "$gl_cv_libunistring_version" >&6; }
     LIBUNISTRING_VERSION="$gl_cv_libunistring_version"
   fi
 
+
+
+case "$ax_cv_ncurses" in "no")
+	as_fn_error $? "ncurses not found" "$LINENO" 5
+esac
+case "$ax_cv_ncursesw" in "no")
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The found ncurses library does not support wide-char." >&5
+$as_echo "$as_me: WARNING: The found ncurses library does not support wide-char." >&2;}
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This means that tig will not correctly render UTF-8." >&5
+$as_echo "$as_me: WARNING: This means that tig will not correctly render UTF-8." >&2;}
+esac
+
+if test "$ax_cv_panel" = "no"; then
+	as_fn_error $? "ncurses panel library not found" "$LINENO" 5
+fi
 
 
 
