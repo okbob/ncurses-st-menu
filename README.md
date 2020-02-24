@@ -16,7 +16,7 @@ Tested:
 
 ## Building PDCurses
 
-This is a simple overview on building PDcurses from source.  For the latest info refer to the SDL repo/README files.
+This is a simple overview on building PDcurses from source.  For the latest info refer to the README files.
 
 ### X11
 
@@ -64,7 +64,7 @@ Built using MinGW from MSys.  Install the following:
 
 ### Examples
 
-This example builds from installed PDCurses for Linux X11:
+This example builds from installed PDCurses for Linux X11:                <br>
 NOTE: The build tools will setup all the other `PDCURSES_xxx` arguments for us.
 
 ```
@@ -72,7 +72,7 @@ PDCURSES_INSTALL=x11 ./configure
 make
 ```
 
-This example builds from PDCurses source for Linux X11:
+This example builds from PDCurses source for Linux X11:                   <br>
 NOTE: PDCURSES_LIB defaults to XCurses so we don't need to specify it
 
 ```
@@ -101,7 +101,7 @@ NOTE: To generate a debug build append `--enable-debug` to the configure stateme
 
 ## Building for NCurses
 
-This assumes the NCurses library/headers are installed:
+This assumes the NCurses library/headers are installed:                            <br>
 NOTE: Unlike the PDCurses build, the `configure` needs nothing special (for most cases)
 
 ```
