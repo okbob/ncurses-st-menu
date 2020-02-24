@@ -1,11 +1,7 @@
-
-#ifndef BUILD_OS_WIN
 #include <langinfo.h>
-#endif
-
 #include <locale.h>
-#include "st_curses.h"
-#include "st_panel.h"
+#include <ncurses.h>
+#include <panel.h>
 #include <string.h>
 
 #ifdef HAVE_LIBUNISTRING
@@ -84,12 +80,8 @@ main()
 
 	setlocale(LC_ALL, "");
 
-	#ifndef BUILD_OS_WIN
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
-	#else
-	config.encoding = "";
-	#endif
 
 #ifdef LIBUNISTRING
 
