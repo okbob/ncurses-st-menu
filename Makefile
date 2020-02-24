@@ -1,4 +1,4 @@
-all: libst_menu.so libst_menu.a simple demoapp demoapp_sl
+all: libst_menu.so libst_menu.a simple demoapp demoapp_sl post_build
 
 # possible to use gcc flag -DNCURSES_WIDECHAR=1 where is possible
 # then any unicode char can be a accelerator
@@ -11,6 +11,12 @@ else
 	UNICODE_OBJ = unicode.o
 endif
 
+
+ifeq ($(BUILD_OS),windows)
+	PROG_EXT=.exe
+	DLL_EXT=.dll
+endif
+
 ifdef PKG_CONFIG
 PKG_CONFIG_PATH = `$(PKG_CONFIG) --variable pc_path pkg-config|cut -d: -f1`
 PKG_CONFIG_TARGET = st_menu.pc.install
@@ -21,8 +27,12 @@ LIBDIRS += $(PDCURSES_LIBDIR) .
 DEPLIBS += $(PDCURSES_DEP_LIBS)
 
 ifeq ($(HAVE_PDCURSES),yes)
-	PDCURSES_STATIC_LIB = $(PDCURSES_LIBDIR)/lib$(PDCURSES_LIB).a
-	PDCURSES_DYN_LIB = $(PDCURSES_LIBDIR)/lib$(PDCURSES_LIB).so
+	PDCURSES_STATIC_LIB = $(PDCURSES_LIBDIR)/$(PDCURSES_LIB).a
+	ifeq "$(BUILD_OS)" "windows"
+	PDCURSES_DYN_LIB = $(PDCURSES_LIBDIR)/$(PDCURSES_LIB).dll
+	else
+	PDCURSES_DYN_LIB = $(PDCURSES_LIBDIR)/$(PDCURSES_LIB).so
+	endif
 else
 	# This is required only for the shared lib implementation 
 	# because by default the panel lib is defined too early 
@@ -48,8 +58,8 @@ st_menu.o: include/st_menu.h src/st_menu.c
 	$(CC) -fPIC src/st_menu.c -o st_menu.o -c -O3 -g $(CFLAGS) $(ST_INCDIRS)
 
 libst_menu.so: st_menu_styles.o st_menu.o $(UNICODE_OBJ)
-	@printf "\nBuilding: $@...\n"
-	$(CC) -shared -Wl,-soname,libst_menu.so -o libst_menu.so st_menu.o st_menu_styles.o $(PDCURSES_DYN_LIB) $(UNICODE_OBJ) $(ST_INCDIRS) $(CFLAGS)
+	@printf "\nBuilding: libst_menu$(DLL_EXT)...\n"
+	$(CC) -shared -Wl,-soname,libst_menu$(DLL_EXT) -o libst_menu$(DLL_EXT) st_menu.o st_menu_styles.o $(PDCURSES_DYN_LIB) $(UNICODE_OBJ) $(ST_INCDIRS) $(CFLAGS)
 
 libst_menu.a: st_menu_styles.o st_menu.o $(UNICODE_OBJ)
 	@printf "\nBuilding: $@...\n"
@@ -60,12 +70,21 @@ demoapp: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
 	$(CC) demo/demo.c -o demoapp libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
 
 demoapp_sl: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
+ifeq "$(BUILD_OS)" "windows"
+	@printf "\nSkipping: $@...\n"
+else
 	@printf "\nBuilding: $@...\n"
 	$(CC) demo/demo.c -o demoapp_sl $(UNICODE_OBJ) $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(ST_LIBDIRS) -lst_menu $(NCURSES_PANEL_LIB) $(CFLAGS)
+endif
 
 simple: demo/simple.c libst_menu.a include/st_menu.h
 	@printf "\nBuilding: $@...\n"
-	$(CC) demo/simple.c -o simple libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
+	$(CC) demo/simple.c -o simple libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
+
+post_build:
+ifeq "$(BUILD_OS)" "windows"
+	test -f $(PDCURSES_LIBDIR)/$(PDCURSES_LIB).dll && cp $(PDCURSES_LIBDIR)/$(PDCURSES_LIB).dll . || true
+endif
 
 st_menu.pc.install:
 	tools/install.sh data st_menu.pc $(PKG_CONFIG_PATH)
@@ -77,9 +96,12 @@ install: libst_menu.so libst_menu.a $(PKG_CONFIG_TARGET)
 
 clean:
 	rm -f *.o *.a *.so 
-	test -f demoapp && rm demoapp || true
-	test -f demoapp_sl && rm demoapp_sl || true
-	test -f simple && rm simple || true
+	test -f demoapp$(PROG_EXT) && rm demoapp$(PROG_EXT) || true
+	test -f demoapp_sl$(PROG_EXT) && rm demoapp_sl$(PROG_EXT) || true
+	test -f simple$(PROG_EXT) && rm simple$(PROG_EXT) || true
+ifeq "$(BUILD_OS)" "windows"
+	test -f $(PDCURSES_LIB).dll && rm $(PDCURSES_LIB).dll || true
+endif
 
 cleanconfig:
 	rm -f *.file config.log config.make config.status st_menu.pc *.awk

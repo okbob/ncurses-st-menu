@@ -16,7 +16,7 @@
 #                       filled in for you.  Currently support: "x11"
 #   PDCURSES_INCDIR     Directory containing the curses/panel headers
 #   PDCURSES_LIBDIR     Directory containing the PDCurses library
-#   PDCURSES_LIB        Name of the PDCurses library, defaults to 'XCurses'
+#   PDCURSES_LIB        Name of the PDCurses library, defaults to 'libXCurses'
 #   PDCURSES_DEP_LIBS   List of the PDCurses dependant library (exclude PDCURSES_LIB),
 #                       'XCurses' is already handled.
 # 
@@ -32,7 +32,7 @@
 #   This is a complete example (ignores the fact that some variables are not needed:
 #   PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 \
 #   PDCURSES_INCDIR=/home/username/github/PDCurses \
-#   PDCURSES_LIB=XCurses \
+#   PDCURSES_LIB=libXCurses \
 #   PDCURSES_DEP_LIBS=Xaw Xmu Xt X11 Xpm SM ICE Xext \
 #   ./configure
 #
@@ -42,14 +42,38 @@
 
 AC_DEFUN([AX_PDCURSES], [
 
+    # USed to get 'host_os'
+    AC_CANONICAL_HOST
+
     AC_ARG_VAR([PDCURSES_INSTALL], [If you have the PDCurses libs/headers installed you can simple use just this flag.  The other options will be filled in for you.  Currently support: 'x11'])
     AC_ARG_VAR([PDCURSES_INCDIR], [Directory containing the curses/panel headers])
     AC_ARG_VAR([PDCURSES_LIBDIR], [Directory containing the PDCurses library])
-    AC_ARG_VAR([PDCURSES_LIB], [Name of the PDCurses library, defaults to 'XCurses'])
-    AC_ARG_VAR([PDCURSES_DEP_LIBS], [List of the PDCurses dependant library (exclude PDCURSES_LIB), 'XCurses' is already handled.])
+    AC_ARG_VAR([PDCURSES_LIB], [Name of the PDCurses library, defaults to 'libXCurses' (Linux), 'pdcurses' (Windows)])
+    AC_ARG_VAR([PDCURSES_DEP_LIBS], [List of the PDCurses dependant library (exclude PDCURSES_LIB).])
     
     # For use outside this script in configure.ac
     ax_cv_pdcurses=no
+
+    # Detect the target system
+    case "${host_os}" in
+        linux*)
+            ax_cv_build=linux
+            AC_SUBST(BUILD_OS, "linux")
+            AC_DEFINE([BUILD_OS_LINUX], [1], [Linux build])
+            ;;
+        cygwin*|mingw*)
+            ax_cv_build=windows
+            AC_SUBST(BUILD_OS, "windows")
+            AC_DEFINE([BUILD_OS_WIN], [1], [Windows build])
+            ;;
+        #darwin*)
+        #    ax_cv_build=mac
+        #    AC_SUBST(BUILD_OS, "mac")
+        #    ;;
+        *)
+            AC_MSG_ERROR(["OS $host_os is not supported"])
+            ;;
+    esac
 
     # Available in the makefile
     AC_SUBST(HAVE_PDCURSES, "no")
@@ -76,7 +100,7 @@ AC_DEFUN([AX_PDCURSES], [
             ])
         fi
 
-        PDCURSES_LIB="XCurses"
+        PDCURSES_LIB="libXCurses"
         PDCURSES_DEP_LIBS="Xaw Xmu Xt X11 Xpm SM ICE Xext"
         AC_DEFINE([XCURSES], [1], [Should be enabled for X11 build])
     ],[
@@ -91,17 +115,24 @@ AC_DEFUN([AX_PDCURSES], [
         ])
     ])
     AS_IF([test "x$PDCURSES_LIB" = x], [ 
-        PDCURSES_LIB="XCurses" 
+        PDCURSES_LIB="libXCurses"
+        AS_IF([test "$ax_cv_build" = "windows"], [ 
+            PDCURSES_LIB="pdcurses" 
+        ]) 
     ])
 
     # PDCURSES_DEP_LIBS not set set set this up if known
     AS_IF([test "x$PDCURSES_DEP_LIBS" = x], [ 
         # These are the ones we know...
-        AS_IF([test "$PDCURSES_LIB" = "XCurses"], [ 
+        AS_IF([test "$PDCURSES_LIB" = "libXCurses"], [ 
             PDCURSES_DEP_LIBS="Xaw Xmu Xt X11 Xpm SM ICE Xext"
             AC_DEFINE([XCURSES], [1], [Should be enabled for X11 build])
         ],[
-            AC_MSG_ERROR([PDCURSES_DEP_LIBS must be set])
+            AS_IF([test "$PDCURSES_LIB" = "pdcurses"], [ 
+                PDCURSES_DEP_LIBS=""
+            ],[
+                AC_MSG_ERROR([PDCURSES_DEP_LIBS must be set])
+            ])
         ])
     ])
 
@@ -116,9 +147,15 @@ AC_DEFUN([AX_PDCURSES], [
     
         # Check for the PDCurses library
         AS_IF([test "x$PDCURSES_LIBDIR" != x], [
-            AC_CHECK_FILE(["$PDCURSES_LIBDIR/lib$PDCURSES_LIB.a"],
-              [],[AC_MSG_ERROR([could not find a $PDCURSES_LIBDIR/lib$PDCURSES_LIB.a])]
-            )
+            AC_CHECK_FILE(["$PDCURSES_LIBDIR/$PDCURSES_LIB.a"],
+              [],[
+                AC_CHECK_FILE(["$PDCURSES_LIBDIR/pdcurses.a"],
+                  [
+                  PDCURSES_LIB="pdcurses"
+                  ],[
+                  AC_MSG_ERROR([could not find a $PDCURSES_LIBDIR/$PDCURSES_LIB.a | pdcurses.a])
+                  ])
+              ])
         ])
 
         # Check for the PDCurses headers

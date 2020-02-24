@@ -9,6 +9,10 @@ Some changes are:
 - since this a pdcurses fork, there are additional configure arguments needed (see below)
 - removed some generated files from the github repo
 
+Tested:
+- Ubuntu 16.04, PDCurses X11
+- Windows 10, PDCurses wincon
+  - Build with MSys/MinGW
 
 ## Building PDCurses
 
@@ -22,28 +26,45 @@ cd PDCurses/x11
 make
 ```
 
+### wincon (Windows Console)
 
+Building with MinGW using MSys
+
+```
+cd PDCurses/wincon
+set PDCURSES_SRCDIR=c:\tmp\PDCurses
+./configure
+make DLL=Y
+```
+
+NOTE: To clean the build you will need to run `rm *.o *.dll *.a` since `make clean` is written expecting to run from a Windows Console.
 
 
 ## Building for PDCurses
 
 To build for PDCurses you need to first need some added agruments for the `configure` prior to the make.  The configure options are defined as:
 
-PDCURSES_INSTALL    If you have the PDCurses libs/headers installed you can 
-                    simple use just this flag.  The other options will be
-                    filled in for you.  Currently support: "x11"
-                    NOTE: Other arguments not needed.
-PDCURSES_INCDIR     Directory containing the curses/panel headers
-PDCURSES_LIBDIR     Directory containing the PDCurses library
-PDCURSES_LIB        Name of the PDCurses library, defaults to 'XCurses'
-PDCURSES_DEP_LIBS   List of the PDCurses dependant library (exclude PDCURSES_LIB),
-                    'XCurses' is already handled.
+**PDCURSES_INSTALL**    If you have the PDCurses libs/headers installed you can 
+                        simple use just this flag.  The other options will be
+                        filled in for you.  Currently support: "x11"
+                        NOTE: Other arguments not needed.                  <br>
+**PDCURSES_INCDIR**     Directory containing the curses/panel headers      <br>
+**PDCURSES_LIBDIR**     Directory containing the PDCurses library          <br>
+**PDCURSES_LIB**        Name of the PDCurses library, 'libXCurses' (Linux), 'pdcurses' (Windows) <br>
+**PDCURSES_DEP_LIBS**   List of the PDCurses dependant library (exclude PDCURSES_LIB).           <br>
  
 NOTE: If you are pointing to the PDCurses github directory built for
       a specific OS/terminal you can omit the PDCURSES_INCDIR.
 
+### Windows Requirements
 
-This example builds from installed PDCurses for X11:
+Built using MinGW from MSys.  Install the following:
+- pacman -S mingw-w64-x86_64-pkg-config
+- pacman -S automake autoconf
+
+### Examples
+
+This example builds from installed PDCurses for Linux X11:
 NOTE: The build tools will setup all the other `PDCURSES_xxx` arguments for us.
 
 ```
@@ -51,7 +72,7 @@ PDCURSES_INSTALL=x11 ./configure
 make
 ```
 
-This example builds from PDCurses source for X11:
+This example builds from PDCurses source for Linux X11:
 NOTE: PDCURSES_LIB defaults to XCurses so we don't need to specify it
 
 ```
@@ -59,13 +80,20 @@ PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 ./configure
 make
 ```
 
-This is a complete example (ignores the fact that some variables are not needed:
+This is a complete example (ignores the fact that some variables are not needed):
 ```
 PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 \
 PDCURSES_INCDIR=/home/username/github/PDCurses \
 PDCURSES_LIB=XCurses \
 PDCURSES_DEP_LIBS=Xaw Xmu Xt X11 Xpm SM ICE Xext \
 ./configure
+make
+```
+
+This example builds from PDCurses source for Windows:
+
+```
+PDCURSES_LIBDIR=/c/tmp/PDCurses/wincon ./configure
 make
 ```
 
