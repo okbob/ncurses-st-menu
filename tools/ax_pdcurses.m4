@@ -75,6 +75,18 @@ AC_DEFUN([AX_PDCURSES], [
             ;;
     esac
 
+    AC_CACHE_CHECK([for nl_langinfo and CODESET], am_cv_langinfo_codeset,
+      [AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <langinfo.h>]],
+            [[char* cs = nl_langinfo(CODESET);]])],
+        [am_cv_langinfo_codeset=yes],
+        [am_cv_langinfo_codeset=no])
+    ])
+    if test $am_cv_langinfo_codeset = yes; then
+      AC_DEFINE(HAVE_LANGINFO_CODESET, 1,
+        [Define if you have <langinfo.h> and nl_langinfo(CODESET).])
+    fi
+
     # Available in the makefile
     AC_SUBST(HAVE_PDCURSES, "no")
 
@@ -141,15 +153,19 @@ AC_DEFUN([AX_PDCURSES], [
         ax_cv_pdcurses=yes
         AC_SUBST(HAVE_PDCURSES, "yes")
         
+        AC_MSG_NOTICE([Building for PDCurses])
+
         # Adds a CFLAG (-DPDCURSES=1 etc)
         AC_DEFINE([PDCURSES], [1], [Building for PDCurses])
         AC_DEFINE([_BSD_SOURCE], [1], [Needed for strdup])
     
         # Check for the PDCurses library
         AS_IF([test "x$PDCURSES_LIBDIR" != x], [
-            AC_CHECK_FILE(["$PDCURSES_LIBDIR/$PDCURSES_LIB.a"],
-              [],[
-                AC_CHECK_FILE(["$PDCURSES_LIBDIR/pdcurses.a"],
+            AS_IF([test -f "$PDCURSES_LIBDIR/$PDCURSES_LIB.a"],
+              [
+              AC_MSG_NOTICE([Checking $PDCURSES_LIBDIR/$PDCURSES_LIB.a... yes])
+              ],[
+                AS_IF([test -f "$PDCURSES_LIBDIR/pdcurses.a"],
                   [
                   PDCURSES_LIB="pdcurses"
                   ],[
@@ -160,12 +176,14 @@ AC_DEFUN([AX_PDCURSES], [
 
         # Check for the PDCurses headers
         AS_IF([test "x$PDCURSES_INCDIR" != x], [
-            AC_CHECK_FILE(["$PDCURSES_INCDIR/curses.h"],[
+            AS_IF([test -f "$PDCURSES_INCDIR/curses.h"],[
+                AC_MSG_NOTICE([Checking $PDCURSES_INCDIR/curses.h... yes])
                 AC_DEFINE([HAVE_CURSES_H], [1], [Curses header available])
             ],[
                 AC_MSG_ERROR([could not find the PDcurses header $PDCURSES_INCDIR/curses.h])
             ])
-            AC_CHECK_FILE(["$PDCURSES_INCDIR/panel.h"],[
+            AS_IF([test -f "$PDCURSES_INCDIR/panel.h"],[
+                AC_MSG_NOTICE([Checking $PDCURSES_INCDIR/panel.h... yes])
                 AC_DEFINE([HAVE_PANEL_H], [1], [Panel header available])
             ],[
                 AC_MSG_ERROR([could not find the PDcurses header $PDCURSES_INCDIR/panel.h])
@@ -173,9 +191,10 @@ AC_DEFUN([AX_PDCURSES], [
         ])
     ])
     
-    # If not using PDCurses just clear the PDCURSES_LIB
+    # If not using PDCurses just clear some variables
     AS_IF([test "$HAVE_PDCURSES" = "no"], [ 
-        PDCURSES_LIB="" 
+        PDCURSES_LIB=""
+        PDCURSES_DEP_LIBS=""
     ])
 
 ])dnl

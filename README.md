@@ -68,6 +68,7 @@ This example builds from installed PDCurses for Linux X11:                <br>
 NOTE: The build tools will setup all the other `PDCURSES_xxx` arguments for us.
 
 ```
+./autogen.sh
 PDCURSES_INSTALL=x11 ./configure
 make
 ```
@@ -76,12 +77,14 @@ This example builds from PDCurses source for Linux X11:                   <br>
 NOTE: PDCURSES_LIB defaults to `libXCurses` so we don't need to specify it
 
 ```
+./autogen.sh
 PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 ./configure
 make
 ```
 
 This is a complete example (ignores the fact that some variables are not needed):
 ```
+./autogen.sh
 PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 \
 PDCURSES_INCDIR=/home/username/github/PDCurses \
 PDCURSES_LIB=libXCurses \
@@ -93,6 +96,7 @@ make
 This example builds from PDCurses source for Windows:
 
 ```
+./autogen.sh
 PDCURSES_LIBDIR=/c/tmp/PDCurses/wincon ./configure
 make
 ```
@@ -105,9 +109,15 @@ This assumes the NCurses library/headers are installed:                         
 NOTE: Unlike the PDCurses build, the `configure` needs nothing special (for most cases)
 
 ```
+./autogen.sh
 ./configure
 make
 ```
+
+# Screenshots
+
+PDCurses Ubuntu 16.04 X11 
+![](screenshots/scr12.png)
 
 -----------------------
 
@@ -159,7 +169,8 @@ It does only pulldown menus and menubars, nothing else. It is not complex framew
     ./demo
 
 Creates `demo` and `demo_sl`. `demo_sl` uses shared library - and it can be executed by
-`LD_LIBRARY_PATH=. /.demo_sl`.
+`LD_LIBRARY_PATH=. /.demo_sl`. Note: when you doesn't modify `LD_LIBRARY_PATH`, you should
+to run `make install` for correct behave of demo_sl (demo with shared library).
 
 `Command|Set style` submenu is active - you can change styles interactivly.
 

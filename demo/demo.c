@@ -1,5 +1,5 @@
 
-#ifndef BUILD_OS_WIN
+#ifndef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
 
@@ -291,7 +291,7 @@ main()
 
 	setlocale(LC_ALL, "");
 
-	#ifndef BUILD_OS_WIN
+	#ifndef HAVE_LANGINFO_CODESET
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
 	#else

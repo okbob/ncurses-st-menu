@@ -65,20 +65,30 @@ int
 main()
 {
 	ST_MENU_CONFIG  config;
-	ST_MENU_ITEM		   *active_item;
 	struct ST_MENU *menu;
-	bool	activated;
 	int		c;
 	MEVENT	mevent;
 	bool	alt;
 
-	ST_MENU_ITEM _file[] = {
-		{"E~x~it", 34, "Alt-x"},
-		{NULL, -1, NULL}
-	};
-
-	ST_MENU_ITEM menubar[] = {
-		{"~F~ile", 61, NULL, 0, 0, 0, _file},
+	ST_MENU_ITEM items[] = {
+		{"field 01", 1},
+		{"field 02", 2},
+		{"field 03", 3},
+		{"field 04", 4},
+		{"field 05", 5},
+		{"field 06", 6},
+		{"field 07", 7},
+		{"field 08", 8},
+		{"field 09", 9},
+		{"field 10", 10},
+		{"field 11", 11},
+		{"field 12", 12},
+		{"field 13", 13},
+		{"field 14", 14},
+		{"field 15", 15},
+		{"field 16", 16},
+		{"field 17", 17},
+		{"field 18", 18},
 		{NULL, -1, NULL}
 	};
 
@@ -138,8 +148,7 @@ main()
 	st_menu_set_desktop_window(stdscr);
 
 	/* prepare state variable for menubar */
-	menu = st_menu_new_menubar(&config, menubar);
-	st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
+	menu = st_menu_new(&config, items, 10, 10, "long menu");
 
 	/* post meubar (display it) */
 	st_menu_post(menu);
@@ -155,14 +164,6 @@ main()
 
 		processed = st_menu_driver(menu, c, alt, &mevent);
 		doupdate();
-
-		active_item = st_menu_selected_item(&activated);
-		if (processed && activated)
-		{
-			/* here is processing of menucode related to Exit menu item */
-			if (active_item->code == 34)
-				break;
-		}
 
 		if (!processed && (c == ST_MENU_ESCAPE || c == KEY_MOUSE))
 		{

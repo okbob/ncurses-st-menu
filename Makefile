@@ -1,4 +1,4 @@
-all: libst_menu.so libst_menu.a simple demoapp demoapp_sl post_build
+all: libst_menu.so libst_menu.a simple simple2 demoapp demoapp_sl post_build
 
 # possible to use gcc flag -DNCURSES_WIDECHAR=1 where is possible
 # then any unicode char can be a accelerator
@@ -78,6 +78,10 @@ simple: demo/simple.c libst_menu.a include/st_menu.h
 	@printf "\nBuilding: $@...\n"
 	$(CC) demo/simple.c -o simple libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
 
+simple2: demo/simple2.c libst_menu.a include/st_menu.h
+	@printf "\nBuilding: $@...\n"
+	$(CC) demo/simple2.c -o simple2 libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
+
 post_build:
 ifeq "$(BUILD_OS)" "windows"
 	test -f $(PDCURSES_LIBDIR)/$(PDCURSES_LIB).dll && cp $(PDCURSES_LIBDIR)/$(PDCURSES_LIB).dll . || true
@@ -96,6 +100,7 @@ clean:
 	test -f demoapp$(PROG_EXT) && rm demoapp$(PROG_EXT) || true
 	test -f demoapp_sl$(PROG_EXT) && rm demoapp_sl$(PROG_EXT) || true
 	test -f simple$(PROG_EXT) && rm simple$(PROG_EXT) || true
+	test -f simple2$(PROG_EXT) && rm simple2$(PROG_EXT) || true
 ifeq "$(BUILD_OS)" "windows"
 	test -f $(PDCURSES_LIB).dll && rm $(PDCURSES_LIB).dll || true
 endif

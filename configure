@@ -4268,6 +4268,39 @@ $as_echo "#define BUILD_OS_WIN 1" >>confdefs.h
             ;;
     esac
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_langinfo and CODESET" >&5
+$as_echo_n "checking for nl_langinfo and CODESET... " >&6; }
+if ${am_cv_langinfo_codeset+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <langinfo.h>
+int
+main ()
+{
+char* cs = nl_langinfo(CODESET);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  am_cv_langinfo_codeset=yes
+else
+  am_cv_langinfo_codeset=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_langinfo_codeset" >&5
+$as_echo "$am_cv_langinfo_codeset" >&6; }
+    if test $am_cv_langinfo_codeset = yes; then
+
+$as_echo "#define HAVE_LANGINFO_CODESET 1" >>confdefs.h
+
+    fi
+
     # Available in the makefile
     HAVE_PDCURSES="no"
 
@@ -4461,6 +4494,9 @@ fi
         HAVE_PDCURSES="yes"
 
 
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Building for PDCurses" >&5
+$as_echo "$as_me: Building for PDCurses" >&6;}
+
         # Adds a CFLAG (-DPDCURSES=1 etc)
 
 $as_echo "#define PDCURSES 1" >>confdefs.h
@@ -4472,45 +4508,14 @@ $as_echo "#define _BSD_SOURCE 1" >>confdefs.h
         # Check for the PDCurses library
         if test "x$PDCURSES_LIBDIR" != x; then :
 
-            as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_LIBDIR/$PDCURSES_LIB.a"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_LIBDIR/$PDCURSES_LIB.a\"" >&5
-$as_echo_n "checking for \"$PDCURSES_LIBDIR/$PDCURSES_LIB.a\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_LIBDIR/$PDCURSES_LIB.a""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+            if test -f "$PDCURSES_LIBDIR/$PDCURSES_LIB.a"; then :
+
+              { $as_echo "$as_me:${as_lineno-$LINENO}: Checking $PDCURSES_LIBDIR/$PDCURSES_LIB.a... yes" >&5
+$as_echo "$as_me: Checking $PDCURSES_LIBDIR/$PDCURSES_LIB.a... yes" >&6;}
 
 else
 
-                as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_LIBDIR/pdcurses.a"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_LIBDIR/pdcurses.a\"" >&5
-$as_echo_n "checking for \"$PDCURSES_LIBDIR/pdcurses.a\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_LIBDIR/pdcurses.a""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+                if test -f "$PDCURSES_LIBDIR/pdcurses.a"; then :
 
                   PDCURSES_LIB="pdcurses"
 
@@ -4520,34 +4525,17 @@ else
 
 fi
 
-
 fi
-
 
 fi
 
         # Check for the PDCurses headers
         if test "x$PDCURSES_INCDIR" != x; then :
 
-            as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_INCDIR/curses.h"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_INCDIR/curses.h\"" >&5
-$as_echo_n "checking for \"$PDCURSES_INCDIR/curses.h\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_INCDIR/curses.h""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+            if test -f "$PDCURSES_INCDIR/curses.h"; then :
 
+                { $as_echo "$as_me:${as_lineno-$LINENO}: Checking $PDCURSES_INCDIR/curses.h... yes" >&5
+$as_echo "$as_me: Checking $PDCURSES_INCDIR/curses.h... yes" >&6;}
 
 $as_echo "#define HAVE_CURSES_H 1" >>confdefs.h
 
@@ -4557,26 +4545,10 @@ else
                 as_fn_error $? "could not find the PDcurses header $PDCURSES_INCDIR/curses.h" "$LINENO" 5
 
 fi
+            if test -f "$PDCURSES_INCDIR/panel.h"; then :
 
-            as_ac_File=`$as_echo "ac_cv_file_"$PDCURSES_INCDIR/panel.h"" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$PDCURSES_INCDIR/panel.h\"" >&5
-$as_echo_n "checking for \"$PDCURSES_INCDIR/panel.h\"... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r ""$PDCURSES_INCDIR/panel.h""; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
+                { $as_echo "$as_me:${as_lineno-$LINENO}: Checking $PDCURSES_INCDIR/panel.h... yes" >&5
+$as_echo "$as_me: Checking $PDCURSES_INCDIR/panel.h... yes" >&6;}
 
 $as_echo "#define HAVE_PANEL_H 1" >>confdefs.h
 
@@ -4587,15 +4559,15 @@ else
 
 fi
 
-
 fi
 
 fi
 
-    # If not using PDCurses just clear the PDCURSES_LIB
+    # If not using PDCurses just clear some variables
     if test "$HAVE_PDCURSES" = "no"; then :
 
         PDCURSES_LIB=""
+        PDCURSES_DEP_LIBS=""
 
 fi
 
