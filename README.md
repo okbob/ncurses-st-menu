@@ -46,7 +46,8 @@ It does only pulldown menus and menubars, nothing else. It is not complex framew
     ./demo
 
 Creates `demo` and `demo_sl`. `demo_sl` uses shared library - and it can be executed by
-`LD_LIBRARY_PATH=. /.demo_sl`.
+`LD_LIBRARY_PATH=. /.demo_sl`. Note: when you doesn't modify `LD_LIBRARY_PATH`, you should
+to run `make install` for correct behave of demo_sl (demo with shared library).
 
 `Command|Set style` submenu is active - you can change styles interactivly.
 

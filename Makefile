@@ -1,4 +1,4 @@
-all: libst_menu.so libst_menu.a demoapp demoapp_sl simple
+all: libst_menu.so libst_menu.a demoapp demoapp_sl simple simple2
 
 # possible to use gcc flag -DNCURSES_WIDECHAR=1 where is possible
 # then any unicode char can be a accelerator
@@ -40,6 +40,9 @@ demoapp_sl: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
 simple: demo/simple.c libst_menu.a include/st_menu.h
 	$(CC) demo/simple.c -o simple libst_menu.a -Wall $(LDLIBS) $(LIB_UNISTRING) -Iinclude
 
+simple2: demo/simple2.c libst_menu.a include/st_menu.h
+	$(CC) demo/simple2.c -o simple2 libst_menu.a -Wall $(LDLIBS) $(LIB_UNISTRING) -Iinclude
+
 st_menu.pc.install:
 	tools/install.sh data st_menu.pc $(PKG_CONFIG_PATH)
 
@@ -49,11 +52,12 @@ install: libst_menu.so libst_menu.a $(PKG_CONFIG_TARGET)
 	tools/install.sh bin libst_menu.a $(LIBDIR)
 
 clean:
-	rm st_menu_styles.o
-	rm st_menu.o
-	rm libst_menu.so
-	rm libst_menu.a
-	rm demoapp
-	rm demoapp_sl
-	rm simple
-	test -f unicode.o && rm unicode.o || true
+	rm -f st_menu_styles.o
+	rm -f st_menu.o
+	rm -f libst_menu.so
+	rm -f libst_menu.a
+	rm -f demoapp
+	rm -f demoapp_sl
+	rm -f simple
+	rm -f simple2
+	rm -f unicode.o

@@ -905,36 +905,6 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 		wmaxy = smaxy - 1;
 		wmaxx = smaxx - config->shadow_width;
 
-#if NCURSES_WIDECHAR > 0 && defined HAVE_NCURSESW
-
-		for (i = 0; i <= smaxy; i++)
-			for (j = 0; j <= smaxx; j++)
-			{
-				cchar_t		cch;
-				wchar_t		wch[CCHARW_MAX];
-				attr_t		attr;
-				short int	cp;
-
-				/* skip overwritten content */
-				if (i < wmaxy && j < wmaxx)
-					continue;
-
-				mvwin_wch(menu->shadow_window, i, j, &cch);
-				getcchar(&cch, wch, &attr, &cp, NULL);
-
-				/*
-				 * When original attributte holds A_ALTCHARSET bit, then
-				 * then updated attributte have to hold this bit too, elsewhere
-				 * ACS chars will be broken.
-				 */
-				setcchar(&cch, wch,
-									shadow_attr | (attr & A_ALTCHARSET),
-									config->menu_shadow_cpn,
-									NULL);
-				mvwadd_wch(menu->shadow_window, i, j, &cch);
-			}
-
-#else
 
 		for (i = 0; i <= smaxy; i++)
 			for (j = 0; j <= smaxx; j++)
@@ -954,8 +924,6 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 								config->menu_shadow_cpn,
 								NULL);
 			}
-
-#endif
 
 		wnoutrefresh(menu->shadow_window);
 	}
@@ -1978,8 +1946,8 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items, int begin_y, int b
 /*
  * Create state variable for menubar based on template (array) of ST_MENU_ITEM
  */
-struct
-ST_MENU *st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM *menu_items)
+struct ST_MENU *
+st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM *menu_items)
 {
 	struct ST_MENU *menu;
 	int		maxy, maxx;
