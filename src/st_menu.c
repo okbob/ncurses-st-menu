@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <ctype.h>
 #include "st_curses.h"
 #include "st_panel.h"
