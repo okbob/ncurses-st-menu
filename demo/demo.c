@@ -370,6 +370,9 @@ main()
 	menu = st_menu_new_menubar(&config, menubar);
 
 	st_menu_enable_option(menu, 81, ST_MENU_OPTION_MARKED);
+	st_menu_enable_option(menu, 50, ST_MENU_OPTION_DISABLED);
+	st_menu_enable_option(menu, 51, ST_MENU_OPTION_DISABLED);
+
 	st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
 
 	/* pass desktop panel to lib to show shadows correctly */

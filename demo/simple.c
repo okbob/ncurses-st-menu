@@ -12,6 +12,12 @@
 
 #include "st_menu.h"
 
+#define		CONFIG_FIRST		35
+#define		CONFIG_SECOND		36
+#define		CONFIG_THIRD		37
+#define		CONFIG_SWITCH_ONE	38
+#define		CONFIG_SWITCH_TWO	39
+
 /*
  * Read event. When event is mouse event, read mouse data
  */
@@ -54,6 +60,8 @@ repeat:
 	return c;
 }
 
+
+
 /*
  * Application demo
  */
@@ -68,13 +76,28 @@ main()
 	MEVENT	mevent;
 	bool	alt;
 
+	int config_option_demo = CONFIG_FIRST;
+	int switch_one_demo = -1;
+	int switch_two_demo = -1;
+
 	ST_MENU_ITEM _file[] = {
 		{"E~x~it", 34, "Alt-x"},
 		{NULL, -1, NULL}
 	};
 
+	ST_MENU_ITEM _config[] = {
+		{"~F~irst", CONFIG_FIRST, NULL},
+		{"~S~econd", CONFIG_SECOND, NULL},
+		{"~T~hird", CONFIG_THIRD, NULL},
+		{"--", -1, NULL},
+		{"Switch one", CONFIG_SWITCH_ONE, NULL},
+		{"Switch two", CONFIG_SWITCH_TWO, NULL},
+		{NULL, -1, NULL}
+	};
+
 	ST_MENU_ITEM menubar[] = {
 		{"~F~ile", 61, NULL, 0, 0, 0, _file},
+		{"~C~onfig", 62, NULL, 0, 0, 0, _config},
 		{NULL, -1, NULL}
 	};
 
@@ -132,6 +155,14 @@ main()
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);
 	st_menu_set_focus(menu, ST_MENU_FOCUS_ALT_MOUSE);
+
+	/* prepare ref menu options */
+	st_menu_set_ref_option(menu, CONFIG_FIRST, ST_MENU_OPTION_MARKED_REF, &config_option_demo);
+	st_menu_set_ref_option(menu, CONFIG_SECOND, ST_MENU_OPTION_MARKED_REF, &config_option_demo);
+	st_menu_set_ref_option(menu, CONFIG_THIRD, ST_MENU_OPTION_MARKED_REF, &config_option_demo);
+
+	st_menu_set_ref_option(menu, CONFIG_SWITCH_ONE, ST_MENU_OPTION_SWITCH2_REF, &switch_one_demo);
+	st_menu_set_ref_option(menu, CONFIG_SWITCH_TWO, ST_MENU_OPTION_SWITCH3_REF, &switch_two_demo);
 
 	/* post meubar (display it) */
 	st_menu_post(menu);

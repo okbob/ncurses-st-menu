@@ -73,6 +73,9 @@ st_menu_load_style_rgb(ST_MENU_CONFIG *config, int style, int start_from_cpn, in
 
 	config->submenu_tag = '>';
 	config->mark_tag = '*';
+	config->switch_tag_n1 = '?';
+	config->switch_tag_0 = '-';
+	config->switch_tag_1 = 'x';
 	config->draw_box = true;
 	config->extern_accel_text_space = 2;
 	config->force_ascii_art = false;
@@ -83,7 +86,12 @@ st_menu_load_style_rgb(ST_MENU_CONFIG *config, int style, int start_from_cpn, in
 #if defined  HAVE_NCURSESW
 
 	if (!config->force8bit)
+	{
 		config->mark_tag = L'\x2714';
+		config->switch_tag_n1 = L'\x2680';
+		config->switch_tag_0 = L'\x25FB';
+		config->switch_tag_1 = L'\x2612';
+	}
 
 #endif
 
