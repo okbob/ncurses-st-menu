@@ -66,25 +66,24 @@ main()
 	MEVENT	mevent;
 	bool	alt;
 
+	bool	processed = false;
+	bool	activated;
+	ST_MENU_ITEM *selected_item;
+
+	ST_MENU_ITEM _encoding[] = {
+		{"_1_latin 1"},
+		{"_2_latin 2"},
+		{"_3_win1250"},
+		{"_4_win1252"},
+		{"_5_utf8"},
+		{NULL, -1, NULL}
+	};
+
 	ST_MENU_ITEM items[] = {
-		{"field 01", 1},
-		{"field 02", 2},
-		{"field 03", 3},
-		{"field 04", 4},
-		{"field 05", 5},
-		{"field 06", 6},
-		{"field 07", 7},
-		{"field 08", 8},
-		{"field 09", 9},
-		{"field 10", 10},
-		{"field 11", 11},
-		{"field 12", 12},
-		{"field 13", 13},
-		{"field 14", 14},
-		{"field 15", 15},
-		{"field 16", 16},
-		{"field 17", 17},
-		{"field 18", 18},
+		{"~C~opy", 1, "C-c"},
+		{"~P~aste", 2, "C-v"},
+		{"--", -1, NULL},
+		{"~E~ncoding", 3, NULL, 0, 0, 0, _encoding},
 		{NULL, -1, NULL}
 	};
 
@@ -140,7 +139,7 @@ main()
 	st_menu_set_desktop_window(stdscr);
 
 	/* prepare state variable for menubar */
-	menu = st_menu_new(&config, items, 10, 10, "long menu");
+	menu = st_menu_new(&config, items, 5, 5, "context menu");
 
 	/* post meubar (display it) */
 	st_menu_post(menu);
@@ -150,8 +149,6 @@ main()
 
 	while (1)
 	{
-		bool	processed = false;
-
 		c = get_event(&mevent, &alt);
 
 		processed = st_menu_driver(menu, c, alt, &mevent);
@@ -167,7 +164,13 @@ main()
 			doupdate();
 		}
 
-		if (!processed && alt && c == 'x')
+		selected_item = st_menu_selected_item(&activated);
+
+		/* ignore resize */
+		if (c == KEY_RESIZE)
+			continue;
+
+		if (!processed || activated)
 			break;
 	}
 
@@ -175,6 +178,11 @@ main()
 
 	st_menu_unpost(menu, true);
 	st_menu_free(menu);
+
+	if (processed && activated)
+		printf("choosed %s\n", selected_item->text);
+	else
+		printf("escaped\n");
 
 	return 0;
 }
