@@ -192,10 +192,13 @@ extern bool st_menu_set_ref_option(struct ST_MENU *menu, int code, int option, i
 
 ## Example:
 ```c
+#ifdef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
+#endif
+
 #include <locale.h>
-#include <ncurses.h>
-#include <panel.h>
+#include "st_curses.h"
+#include "st_panel.h"
 #include <string.h>
 #include <unicase.h>
 
@@ -270,8 +273,12 @@ main()
 
 	setlocale(LC_ALL, "");
 
+	#ifdef HAVE_LANGINFO_CODESET
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
+	#else
+	config.encoding = "";
+	#endif
 	config.language = uc_locale_language();
 	config.force8bit = strcmp(config.encoding, "UTF-8") != 0;
 
@@ -300,6 +307,7 @@ main()
 
 	/* prepare main window */
 	wbkgd(stdscr, COLOR_PAIR(1));
+    wclear(stdscr);
 	wrefresh(stdscr);
 
 	/*

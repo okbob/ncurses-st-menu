@@ -1,31 +1,6 @@
 #include <ctype.h>
-
-#if defined HAVE_NCURSESW_CURSES_H
-#include <ncursesw/curses.h>
-#elif defined HAVE_NCURSESW_H
-#include <ncursesw.h>
-#elif defined HAVE_NCURSES_CURSES_H
-#include <ncurses/curses.h>
-#elif defined HAVE_NCURSES_H
-#include <ncurses.h>
-#elif defined HAVE_CURSES_H
-#include <curses.h>
-#else
-/* fallback */
-#include <ncurses/ncurses.h>
-#endif
-
-#if defined HAVE_NCURSESW_PANEL_H
-#include <ncursesw/panel.h>
-#elif defined HAVE_NCURSES_PANEL_H
-#include <ncurses/panel.h>
-#elif defined HAVE_PANEL_H
-#include <panel.h>
-#else
-/* fallback */
-#include <ncurses/panel.h>
-#endif
-
+#include "st_curses.h"
+#include "st_panel.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -167,6 +142,35 @@ safe_malloc(size_t size)
 
 	return ptr;
 }
+
+#ifdef PDCURSES
+/*
+ Created a new version of newwin() because PDCurses (unlike ncurses)
+ will not allocate a Window if:
+ (begin_y + rows > SP->lines || begin_x + cols > SP->cols)
+ Therefore we will make an attempt to reduce the rows/cols if needed
+ to get the allocation to pass for *most* cases.
+*/
+static WINDOW* newwin2(int* rows, int* cols, int begin_y, int begin_x)
+{
+	int SPlines, SPcols;
+
+	getmaxyx(stdscr, SPlines, SPcols);
+	if (begin_y + *rows > SPlines)
+	{
+		*rows = SPlines - begin_y;
+	}
+	if (begin_x + *cols > SPcols)
+	{
+		*cols = SPcols - begin_x;
+	}
+
+	return newwin(*rows, *cols, begin_y, begin_x);
+}
+#else
+#define newwin2(rows, cols, begin_y, begin_x)  newwin(*rows, *cols, begin_y, begin_x)
+#endif
+
 
 /*
  * Returns bytes of multibyte char
@@ -907,7 +911,7 @@ pulldownmenu_ajust_position(struct ST_MENU *menu, int maxy, int maxx)
 			{
 				WINDOW   *new_shadow_window;
 
-				new_shadow_window = newwin(new_rows, new_cols, new_y + 1, new_x + config->shadow_width);
+				new_shadow_window = newwin2(&new_rows, &new_cols, new_y + 1, new_x + config->shadow_width);
 
 				/* There are no other possibility to resize panel */
 				replace_panel(menu->shadow_panel, new_shadow_window);
@@ -2042,7 +2046,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items, int begin_y, int b
 	/* Prepare property for menu shadow */
 	if (config->shadow_width > 0)
 	{
-		menu->shadow_window = newwin(rows, cols, begin_y + 1, begin_x + config->shadow_width);
+		menu->shadow_window = newwin2(&rows, &cols, begin_y + 1, begin_x + config->shadow_width);
 		menu->shadow_panel = new_panel(menu->shadow_window);
 
 		hide_panel(menu->shadow_panel);
@@ -2056,7 +2060,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items, int begin_y, int b
 		menu->shadow_panel = NULL;
 	}
 
-	menu->window = newwin(rows, cols, begin_y, begin_x);
+	menu->window = newwin2(&rows, &cols, begin_y, begin_x);
 
 	menu->ideal_y_pos = begin_y;
 	menu->ideal_x_pos = begin_x;
@@ -2136,12 +2140,10 @@ st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM
 
 	getmaxyx(stdscr, maxy, maxx);
 
-	/* by compiler quiet */
-	(void) maxy;
-
 	menu = safe_malloc(sizeof(struct ST_MENU));
 
-	menu->window = newwin(1, maxx, 0, 0);
+	maxy = 1;
+	menu->window = newwin2(&maxy, &maxx, 0, 0);
 	menu->panel = new_panel(menu->window);
 
 	/* there are not shadows */
@@ -2698,7 +2700,7 @@ st_cmdbar_new(ST_MENU_CONFIG *config, ST_CMDBAR_ITEM *cmdbar_items)
 {
 	struct ST_CMDBAR *cmdbar;
 	ST_CMDBAR_ITEM *cmdbar_item;
-	int		maxy, maxx;
+	int		maxy, maxx, tmpy;
 	int		i;
 	int		last_position;
 
@@ -2709,7 +2711,8 @@ st_cmdbar_new(ST_MENU_CONFIG *config, ST_CMDBAR_ITEM *cmdbar_items)
 
 	getmaxyx(stdscr, maxy, maxx);
 
-	cmdbar->window = newwin(1, maxx, maxy - 1, 0);
+	tmpy = 1;
+	cmdbar->window = newwin2(&tmpy, &maxx, maxy - 1, 0);
 	cmdbar->panel = new_panel(cmdbar->window);
 
 	wbkgd(cmdbar->window,

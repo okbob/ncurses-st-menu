@@ -1,6 +1,6 @@
 # ncurses-st-menu 
 
-modern and simple ncurses based library for CUA look menu
+modern and simple ncurses/PDCurses based library for CUA look menu
 
 I didn't find any library for Unix terminal applications for creating pull down and menu bar menus. 
 My short target is library for menu with midnight commander look. The origin ncurses menu are not designed
@@ -31,6 +31,8 @@ It does only pulldown menus and menubars, nothing else. It is not complex framew
   in menu library by function `st_menu_driver` and menu can be removed by function 
   `st_menu_free`.
 
+* Compatible with PDCurses (offers Windows support--among others)
+
 # Screenshots
 
 ![](screenshots/small/scr1.png)
@@ -40,26 +42,48 @@ It does only pulldown menus and menubars, nothing else. It is not complex framew
 ![](screenshots/small/scr8.png)
 
 
-# Demo
+# Building Libraries/Demos
 
-    make
-    ./demo
+Use the following to build for ncurses.  (PDCurses specific build information is detailed later in this document)
+```
+./autogen.sh
+./configure
+make
+```
 
-Creates `demo` and `demo_sl`. `demo_sl` uses shared library - and it can be executed by
-`LD_LIBRARY_PATH=. /.demo_sl`. Note: when you doesn't modify `LD_LIBRARY_PATH`, you should
-to run `make install` for correct behave of demo_sl (demo with shared library).
+NOTE: To generate a debug build append `--enable-debug` to the configure statement.
+
+Creates `demoapp` and `demoapp_sl`. `demoapp_sl` uses shared library - and it can be executed by
+`LD_LIBRARY_PATH=. /.demoapp_sl`. Note: when you doesn't modify `LD_LIBRARY_PATH`, you should
+to run `make install` for correct behave of `demoapp_sl` (demo with shared library).
 
 `Command|Set style` submenu is active - you can change styles interactivly.
 
 When there are no `ncursesw` library, then modify Makefile and replace `ncursesw` by `necurses`,
-and remove `-DNCURSES_WIDECHAR=1`
+and remove `-DNCURSES_WIDECHAR=1`.
+
+## Clean Build
+
+To remove all built objects/executable/etc run:
+
+```
+make clean
+```
+
+To remove the files created by the autotools as well as objects/executable/etc:
+
+```
+make cleanall
+```
 
 # Usage
 ```C
+#ifdef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
+#endif
 #include <locale.h>
-#include <ncurses.h>
-#include <panel.h>
+#include "st_curses.h"
+#include "st_panel.h"
 #include <string.h>
 #include <unicase.h>
 
@@ -134,9 +158,23 @@ main()
 
 	setlocale(LC_ALL, "");
 
+    #ifdef HAVE_LANGINFO_CODESET
 	/* Don't use UTF when terminal doesn't use UTF */
 	config.encoding = nl_langinfo(CODESET);
+	#else
+	config.encoding = "";
+	#endif
+
+#ifdef LIBUNISTRING
+
 	config.language = uc_locale_language();
+
+#else
+
+	config.language = NULL;
+
+#endif
+    
 	config.force8bit = strcmp(config.encoding, "UTF-8") != 0;
 
 	initscr();
@@ -164,6 +202,7 @@ main()
 
 	/* prepare main window */
 	wbkgd(stdscr, COLOR_PAIR(1));
+    wclear(stdscr);
 	wrefresh(stdscr);
 
 	/*
@@ -220,6 +259,111 @@ main()
 * optional libunistring - LGPL Unicode library
 
 * define NCURSES_WIDECHAR when wide char ncurses support is available.
+
+
+# PDCurses
+
+
+## Building PDCurses
+
+This is a simple overview on building PDcurses from source.  For the latest info refer to the README files for each build directory/type.
+
+### X11
+
+```
+cd PDCurses/x11
+./configure
+make
+```
+
+### wincon (Windows Console)
+
+Building with MinGW using MSys
+
+```
+cd PDCurses/wincon
+set PDCURSES_SRCDIR=c:\tmp\PDCurses
+make DLL=Y
+```
+
+NOTE: To clean the build you will need to run `rm *.o *.dll *.a` since `make clean` was written expecting to run from a Windows Console (i.e. uses DEL).
+
+
+## Building for PDCurses
+
+To build for PDCurses you first need some added agruments for the `configure` prior to the make.  The configure options are defined as:
+
+**PDCURSES_INSTALL**    If you have the PDCurses libs/headers installed you can 
+                        simply use just this flag.  The other options will be
+                        filled in for you.  Currently support: "x11"
+                        NOTE: Other arguments not needed.                  <br>
+**PDCURSES_INCDIR**     Directory containing the curses/panel headers      <br>
+**PDCURSES_LIBDIR**     Directory containing the PDCurses library          <br>
+**PDCURSES_LIB**        Name of the PDCurses library, defaults to 'libXCurses' (Linux), 'pdcurses' (Windows) <br>
+**PDCURSES_DEP_LIBS**   List of the PDCurses dependant library (exclude PDCURSES_LIB).           <br>
+ 
+NOTE: If you are pointing to the PDCurses github directory built for
+      a specific OS/terminal you can omit the PDCURSES_INCDIR.
+
+### Windows Requirements
+
+Built using MinGW from MSys.  Install the following:
+- pacman -S mingw-w64-x86_64-pkg-config
+- pacman -S automake autoconf
+
+### Examples
+
+This example builds from installed PDCurses for Linux X11:                <br>
+NOTE: The build tools will setup all the other `PDCURSES_xxx` arguments for us.
+
+```
+./autogen.sh
+PDCURSES_INSTALL=x11 ./configure
+make
+```
+
+This example builds from PDCurses source for Linux X11:                   <br>
+NOTE: PDCURSES_LIB defaults to `libXCurses` so we don't need to specify it
+
+```
+./autogen.sh
+PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 ./configure
+make
+```
+
+This is a complete example (ignores the fact that some variables are not needed):
+```
+./autogen.sh
+PDCURSES_LIBDIR=/home/username/github/PDCurses/x11 \
+PDCURSES_INCDIR=/home/username/github/PDCurses \
+PDCURSES_LIB=libXCurses \
+PDCURSES_DEP_LIBS=Xaw Xmu Xt X11 Xpm SM ICE Xext \
+./configure
+make
+```
+
+This example builds from PDCurses source for Windows:
+
+```
+./autogen.sh
+PDCURSES_LIBDIR=/c/tmp/PDCurses/wincon ./configure
+make
+```
+
+NOTE: To generate a debug build append `--enable-debug` to the configure statement.
+
+
+## Screenshots
+
+PDCurses Ubuntu 16.04 X11 
+![](screenshots/scr12.png)
+
+
+## PDCurses Tested:
+
+- Ubuntu 16.04, PDCurses X11
+- Windows 10, PDCurses wincon
+  - Build with MSys/MinGW
 
 # Note
 
