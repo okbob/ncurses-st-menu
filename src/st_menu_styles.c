@@ -88,9 +88,15 @@ st_menu_load_style_rgb(ST_MENU_CONFIG *config, int style, int start_from_cpn, in
 	if (!config->force8bit)
 	{
 		config->mark_tag = L'\x2714';
+/*
 		config->switch_tag_n1 = L'\x2680';
-		config->switch_tag_0 = L'\x25FB';
-		config->switch_tag_1 = L'\x2612';
+		config->switch_tag_0 = L'\x2610';
+		config->switch_tag_1 = L'\x2611';
+*/
+
+		config->switch_tag_n1 = '.';
+		config->switch_tag_0 = ' ';
+		config->switch_tag_1 = L'\x2714';
 	}
 
 #endif

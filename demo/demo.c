@@ -393,6 +393,7 @@ main()
 		if (c == KEY_RESIZE)
 		{
 			int		cursor_store[1024];
+			int		*refvals_store[1024];
 
 			getmaxyx(stdscr, maxy, maxx);
 			wbkgd(stdscr, COLOR_PAIR(1));
@@ -406,13 +407,13 @@ main()
 
 			wnoutrefresh(stdscr);
 
-			st_menu_save(menu, cursor_store, 1023);
+			st_menu_save(menu, cursor_store, refvals_store, 1023);
 
 			st_menu_free(menu);
 			menu = st_menu_new_menubar2(&config,
 						style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 
-			st_menu_load(menu, cursor_store);
+			st_menu_load(menu, cursor_store, refvals_store);
 
 			st_cmdbar_free(cmdbar);
 			cmdbar = st_cmdbar_new(&config, bottombar);
@@ -435,13 +436,14 @@ main()
 			if (active_item->group == THEME_GROUP)
 			{
 				int		cursor_store[1024];
+				int	   *refvals_store[1024];
 				int		fcp = 2;
 				int		menu_code = active_item->code;
 				int		start_from_rgb = 200;
 
 				style = active_item->data;
 
-				st_menu_save(menu, cursor_store, 1023);
+				st_menu_save(menu, cursor_store, refvals_store, 1023);
 
 				st_menu_free(menu);
 				st_cmdbar_free(cmdbar);
@@ -464,7 +466,7 @@ main()
 
 				menu = st_menu_new_menubar2(&config, style != ST_MENU_STYLE_FREE_DOS ? NULL : &config_b, menubar);
 
-				st_menu_load(menu, cursor_store);
+				st_menu_load(menu, cursor_store, refvals_store);
 
 				cmdbar = st_cmdbar_new(&config, bottombar);
 

@@ -354,7 +354,7 @@ _save_menustate(struct ST_MENU *menu, int *cursor_rows, int max_rows, int write_
 	int		active_row = -1;
 	int		i;
 
-	if (write_pos >= max_rows)
+	if (write_pos + 1 + menu->nitems >= max_rows)
 	{
 		endwin();
 		printf("FATAL: Cannot save menu positions, too complex menu.\n");
@@ -381,6 +381,33 @@ _save_menustate(struct ST_MENU *menu, int *cursor_rows, int max_rows, int write_
 		cursor_rows[write_pos++] = menu->options[i];
 
 	cursor_rows[write_pos++] = active_row;
+
+	return write_pos;
+}
+
+static int
+_save_refvals(struct ST_MENU *menu, int **refvals, int max_refvals, int write_pos)
+{
+	int		i;
+
+	if (write_pos + menu->nitems >= max_refvals)
+	{
+		endwin();
+		printf("FATAL: Cannot save menu refvals, too complex menu.\n");
+		exit(1);
+	}
+
+	if (menu->submenus)
+	{
+		for (i = 0; i < menu->nitems; i++)
+		{
+			if (menu->submenus[i])
+				write_pos = _save_refvals(menu->submenus[i], refvals, max_refvals, write_pos);
+		}
+	}
+
+	for (i = 0; i < menu->nitems; i++)
+		refvals[write_pos++] = menu->refvals[i];
 
 	return write_pos;
 }
@@ -417,22 +444,48 @@ _load_menustate(struct ST_MENU *menu, int *cursor_rows, int read_pos)
 	return read_pos;
 }
 
+static int
+_load_refvals(struct ST_MENU *menu, int **refvals, int read_pos)
+{
+	int		active_row;
+	int		i;
+
+	if (menu->submenus)
+	{
+		for (i = 0; i < menu->nitems; i++)
+		{
+			if (menu->submenus[i])
+			{
+				read_pos = _load_refvals(menu->submenus[i], refvals, read_pos);
+			}
+		}
+	}
+
+	for (i = 0; i < menu->nitems; i++)
+		menu->refvals[i] = refvals[read_pos++];
+
+	return read_pos;
+}
+
+
 /*
  * Serialize important fields of menustate to cursor_rows array.
  */
 void
-st_menu_save(struct ST_MENU *menu, int *cursor_rows, int max_rows)
+st_menu_save(struct ST_MENU *menu, int *cursor_rows, int **refvals, int max_items)
 {
-	_save_menustate(menu, cursor_rows, max_rows, 0);
+	_save_menustate(menu, cursor_rows, max_items, 0);
+	_save_refvals(menu, refvals, max_items, 0);
 }
 
 /*
  * Load cursor positions and active submenu from safe
  */
 void
-st_menu_load(struct ST_MENU *menu, int *cursor_rows)
+st_menu_load(struct ST_MENU *menu, int *cursor_rows, int **refvals)
 {
 	_load_menustate(menu, cursor_rows, 0);
+	_load_refvals(menu, refvals, 0);
 }
 
 

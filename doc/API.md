@@ -76,6 +76,9 @@ typedef struct
 	int	submenu_tag;			/* symbol used for submenu tag */
 	int	submenu_offset_y;		/* offset for submenu related to right border of parent menu window */
 	int	submenu_offset_x;		/* offset for submenu related to cursor in parent menu window */
+	int		switch_tag_n1;			/* symbol used for switch negative 1 */
+	int		switch_tag_0;			/* symbol used for switch 0 */
+	int		switch_tag_1;			/* symbol used for switch 1 */
 } ST_MENU_CONFIG;
 ```
 
@@ -133,8 +136,8 @@ extern void st_menu_post(struct ST_MENU *menu);
 extern void st_menu_unpost(struct ST_MENU *menu, bool close_active_submenu);
 extern bool st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent);
 extern void st_menu_free(struct ST_MENU *menu);
-extern void st_menu_save(struct ST_MENU *menu, int *cursor_rows, int max_rows);
-extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows);
+extern void st_menu_save(struct ST_MENU *menu, int *cursor_rows, int **refvals, int max_rows);
+extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows, int **refvals);
 
 extern ST_MENU *st_menu_selected_item(bool *activated);
 
@@ -143,6 +146,8 @@ extern bool st_menu_reset_option(struct ST_MENU *menu, int code, int option);
 extern bool st_menu_set_option(struct ST_MENU *menu, int code, int option, bool value);
 extern bool st_menu_reset_all_submenu_options(struct ST_MENU *menu, int menu_code, int option);
 extern bool st_menu_reset_all_options(struct ST_MENU *menu, int option);
+
+extern bool st_menu_set_ref_option(struct ST_MENU *menu, int code, int option, int *refvalue);
 
 ```
 

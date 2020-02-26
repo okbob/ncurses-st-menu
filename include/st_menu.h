@@ -142,8 +142,8 @@ extern void st_menu_post(struct ST_MENU *menu);
 extern void st_menu_unpost(struct ST_MENU *menu, bool close_active_submenu);
 extern bool st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent);
 extern void st_menu_free(struct ST_MENU *menu);
-extern void st_menu_save(struct ST_MENU *menu, int *cursor_rows, int max_rows);
-extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows);
+extern void st_menu_save(struct ST_MENU *menu, int *cursor_rows, int **refvals, int max_items);
+extern void st_menu_load(struct ST_MENU *menu, int *cursor_rows, int **refvals);
 
 extern ST_MENU_ITEM *st_menu_selected_item(bool *activated);
 extern ST_CMDBAR_ITEM *st_menu_selected_command(bool *activated);
