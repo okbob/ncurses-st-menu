@@ -76,7 +76,7 @@ main()
 	MEVENT	mevent;
 	bool	alt;
 
-	int config_option_demo = CONFIG_FIRST;
+	int config_option_demo = 1;
 	int switch_one_demo = -1;
 	int switch_two_demo = -1;
 
@@ -86,9 +86,9 @@ main()
 	};
 
 	ST_MENU_ITEM _config[] = {
-		{"~F~irst", CONFIG_FIRST, NULL},
-		{"~S~econd", CONFIG_SECOND, NULL},
-		{"~T~hird", CONFIG_THIRD, NULL},
+		{"~F~irst", CONFIG_FIRST, NULL, 1},
+		{"~S~econd", CONFIG_SECOND, NULL, 2},
+		{"~T~hird", CONFIG_THIRD, NULL, 3},
 		{"--", -1, NULL},
 		{"Switch one", CONFIG_SWITCH_ONE, NULL},
 		{"Switch two", CONFIG_SWITCH_TWO, NULL},

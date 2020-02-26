@@ -1104,7 +1104,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 			{
 				int   *refval = menu->refvals[offset];
 
-				if (*refval == menu_items->code)
+				if (*refval == menu_items->data)
 				{
 					is_marked = true;
 					mark_tag = config->mark_tag;
@@ -1920,7 +1920,7 @@ post_process:
 
 				if (selected_options & ST_MENU_OPTION_MARKED_REF)
 				{
-					*selected_refval = selected_item->code;
+					*selected_refval = selected_item->data;
 				}
 				else if ((selected_options & ST_MENU_OPTION_SWITCH2_REF) ||
 						 (selected_options & ST_MENU_OPTION_SWITCH3_REF))
