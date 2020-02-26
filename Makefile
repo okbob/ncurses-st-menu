@@ -47,39 +47,30 @@ ST_LIBDIRS := $(foreach librarydir,$(LIBDIRS),-L$(librarydir))
 ST_DEPLIBS := $(foreach library,$(DEPLIBS),-l$(library))
 
 st_menu_styles.o: src/st_menu_styles.c include/st_menu.h
-	@printf "\nBuilding: $<...\n"
 	$(CC) -fPIC src/st_menu_styles.c -o st_menu_styles.o -Wall -c $(ST_INCDIRS) $(CFLAGS)
 
 unicode.o: src/unicode.h src/unicode.c
-	@printf "\nBuilding: $@...\n"
 	$(CC) -fPIC src/unicode.c -o unicode.o -Wall -c $(ST_INCDIRS) $(CFLAGS)
 
 st_menu.o: include/st_menu.h src/st_menu.c
-	@printf "\nBuilding: $@...\n"
 	$(CC) -fPIC src/st_menu.c -o st_menu.o -c -O3 -g $(CFLAGS) $(ST_INCDIRS)
 
 libst_menu.so: st_menu_styles.o st_menu.o $(UNICODE_OBJ)
-	@printf "\nBuilding: libst_menu$(DLL_EXT)...\n"
 	$(CC) -shared -Wl,-soname,libst_menu$(DLL_EXT) -o libst_menu$(DLL_EXT) st_menu.o st_menu_styles.o $(PDCURSES_DYN_LIB) $(UNICODE_OBJ) $(ST_INCDIRS) $(CFLAGS)
 
 libst_menu.a: st_menu_styles.o st_menu.o $(UNICODE_OBJ)
-	@printf "\nBuilding: $@...\n"
 	$(AR) rcs libst_menu.a st_menu_styles.o st_menu.o $(UNICODE_OBJ)
 
 demoapp: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
-	@printf "\nBuilding: $@...\n"
 	$(CC) demo/demo.c -o demoapp libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
 
 demoapp_sl: demo/demo.c libst_menu.so libst_menu.a include/st_menu.h
-	@printf "\nBuilding: $@...\n"
 	$(CC) demo/demo.c -o demoapp_sl $(UNICODE_OBJ) -lst_menu $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(ST_LIBDIRS) $(NCURSES_PANEL_LIB) $(CFLAGS)
 
 simple: demo/simple.c libst_menu.a include/st_menu.h
-	@printf "\nBuilding: $@...\n"
 	$(CC) demo/simple.c -o simple libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
 
 simple2: demo/simple2.c libst_menu.a include/st_menu.h
-	@printf "\nBuilding: $@...\n"
 	$(CC) demo/simple2.c -o simple2 libst_menu.a $(PDCURSES_STATIC_LIB) -Wall $(ST_LIBDIRS) $(LDLIBS) $(ST_DEPLIBS) $(ST_INCDIRS) $(CFLAGS)
 
 post_build:
@@ -106,6 +97,6 @@ ifeq "$(BUILD_OS)" "windows"
 endif
 
 cleanall: clean
-	rm -f *.file config.log config.make config.status st_menu.pc *.awk
+	rm -f *.file config.log config.status st_menu.pc *.awk
 
 .PHONY: clean cleanall
