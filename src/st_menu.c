@@ -72,6 +72,7 @@ struct ST_MENU
 	int			cursor_row;
 	int			mouse_row;						/* mouse row where button1 was pressed */
 	int		   *options;						/* state options, initially copyied from menu */
+	int		  **refvals;						/* referenced values */
 	ST_MENU_ACCELERATOR		*accelerators;
 	int			naccelerators;
 	ST_MENU_CONFIG *config;
@@ -106,6 +107,8 @@ static struct ST_CMDBAR   *active_cmdbar = NULL;
 
 static ST_MENU_ITEM		   *selected_item = NULL;
 static ST_CMDBAR_ITEM	   *selected_command = NULL;
+static int					selected_options = 0;
+static int				   *selected_refval = NULL;
 
 static bool			press_accelerator = false;
 static bool			button1_clicked = false;
@@ -609,6 +612,8 @@ menubar_draw(struct ST_MENU *menu)
 	int		i;
 
 	selected_item = NULL;
+	selected_options = 0;
+	selected_refval = NULL;
 
 	/* do nothing when content is invisible */
 	if (menu->focus == ST_MENU_FOCUS_NONE)
@@ -933,6 +938,44 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 }
 
 /*
+ * Early search of selected refval items. Is necessary to
+ * change state before next drawing.
+ */
+static void
+searching_selected_refval_items(struct ST_MENU *menu)
+{
+	ST_MENU_ITEM	   *menu_items = menu->menu_items;
+	int		row = 1;
+
+	while (menu_items->text != NULL)
+	{
+		int		offset = menu_items - menu->menu_items;
+
+		if (IS_REF_OPTION(menu->options[offset]))
+		{
+			bool	is_cursor_row = menu->cursor_row == row;
+			bool	first_char = true;
+			bool	is_extern_accel;
+			int		text_y = -1;
+			int		text_x = -1;
+
+			if (menu->cursor_row == row)
+			{
+				selected_item = menu_items;
+				selected_options = menu->options[offset];
+				selected_refval= menu->refvals[offset];
+			}
+		}
+
+		menu_items += 1;
+		row += 1;
+	}
+
+	if (menu->active_submenu)
+		searching_selected_refval_items(menu->active_submenu);
+}
+
+/*
  * pulldown menu bar draw
  */
 static void
@@ -987,17 +1030,58 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 
 	while (menu_items->text != NULL)
 	{
+		int		offset = menu_items - menu->menu_items;
 		bool	has_submenu = menu_items->submenu ? true : false;
 		bool	is_disabled = false;
 		bool	is_marked = false;
+		int		mark_tag;
 
 		if (options)
 		{
-			int		offset = menu_items - menu->menu_items;
 			int		option = options[offset];
 
 			is_disabled = option & ST_MENU_OPTION_DISABLED;
-			is_marked = option & ST_MENU_OPTION_MARKED;
+
+			if (option & ST_MENU_OPTION_MARKED)
+			{
+				mark_tag = config->mark_tag;
+				is_marked = true;
+			}
+			else if (option & ST_MENU_OPTION_MARKED_REF)
+			{
+				int   *refval = menu->refvals[offset];
+
+				if (*refval == menu_items->code)
+				{
+					is_marked = true;
+					mark_tag = config->mark_tag;
+				}
+			}
+			else if (option & ST_MENU_OPTION_SWITCH2_REF)
+			{
+				int   *refval = menu->refvals[offset];
+
+				is_marked = true;
+				mark_tag = (*refval == 1) ? config->switch_tag_1 : config->switch_tag_0;
+			}
+			else if (option & ST_MENU_OPTION_SWITCH3_REF)
+			{
+				int   *refval = menu->refvals[offset];
+
+				is_marked = true;
+				switch (*refval)
+				{
+					case 1:
+						mark_tag = config->switch_tag_1;
+						break;
+					case 0:
+						mark_tag = config->switch_tag_0;
+						break;
+					default:
+						mark_tag = config->switch_tag_n1;
+						break;
+				}
+			}
 		}
 
 		if (*menu_items->text == '\0' || strncmp(menu_items->text, "--", 2) == 0)
@@ -1155,7 +1239,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 				mvwprintw(draw_area,
 								row - (draw_box ? 0 : 1),
 								text_x - 1,
-									"%lc", config->mark_tag);
+									"%lc", mark_tag);
 			}
 
 			if (is_cursor_row)
@@ -1269,7 +1353,6 @@ add_correction(WINDOW *s, int *y, int *x)
 		*x += fix_x;
 	}
 }
-
 
 /*
  * Handle any outer event - pressed key, or mouse event. This driver
@@ -1686,6 +1769,8 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 		}
 	}
 
+
+
 	/* when menubar is changed, unpost active pulldown submenu */
 	if (menu->active_submenu && cursor_row != menu->cursor_row)
 	{
@@ -1761,6 +1846,37 @@ post_process:
 			}
 		}
 
+		if (processed)
+		{
+			/* try to search selected item */
+			if (menu)
+				searching_selected_refval_items(menu);
+		}
+
+		/* postprocess for referenced values */
+		if (selected_item && (press_accelerator || press_enter || button1_clicked))
+		{
+			if (IS_REF_OPTION(selected_options))
+			{
+				if (selected_refval == NULL)
+				{
+					endwin();
+					fprintf(stderr, "detected referenced option without referenced value");
+					exit(1);
+				}
+
+				if (selected_options & ST_MENU_OPTION_MARKED_REF)
+				{
+					*selected_refval = selected_item->code;
+				}
+				else if ((selected_options & ST_MENU_OPTION_SWITCH2_REF) ||
+						 (selected_options & ST_MENU_OPTION_SWITCH3_REF))
+				{
+					*selected_refval = (*selected_refval == 1) ? 0 : 1;
+				}
+			}
+		}
+
 		/*
 		 * command bar should be drawed first - because it is deeper
 		 * than pulldown menu
@@ -1790,6 +1906,7 @@ bool
 st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 {
 	bool		aux_unpost_submenu = false;
+	bool		processed;
 
 	/*
 	 * We should to complete mouse click based on two
@@ -1848,6 +1965,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items, int begin_y, int b
 	menu->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
 	menu->submenus = safe_malloc(sizeof(struct ST_MENU) * menu_fields);
 	menu->options = safe_malloc(sizeof(int) * menu_fields);
+	menu->refvals = safe_malloc(sizeof(int*) * menu_fields);
 
 	menu->nitems = menu_fields;
 
@@ -1916,6 +2034,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items, int begin_y, int b
 			menu->submenus[i] = NULL;
 
 		menu->options[i] = menu_item->options;
+		menu->refvals[i] = NULL;
 
 		menu_item += 1;
 		i += 1;
@@ -2005,6 +2124,7 @@ st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM
 	menu->submenus = safe_malloc(sizeof(struct ST_MENU) * menu_fields);
 	menu->accelerators = safe_malloc(sizeof(ST_MENU_ACCELERATOR) * menu_fields);
 	menu->options = safe_malloc(sizeof(int) * menu_fields);
+	menu->refvals = safe_malloc(sizeof(int*) * menu_fields);
 
 	menu->nitems = menu_fields; 
 
@@ -2058,6 +2178,7 @@ st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM
 		menu->naccelerators = naccel;
 
 		menu->options[i] = menu_item->options;
+		menu->refvals[i] = NULL;
 
 		menu_item += 1;
 		i += 1;
@@ -2683,7 +2804,8 @@ st_cmdbar_unpost(struct ST_CMDBAR *cmdbar)
 	update_panels();
 }
 
-void st_cmdbar_free(struct ST_CMDBAR *cmdbar)
+void
+st_cmdbar_free(struct ST_CMDBAR *cmdbar)
 {
 	int		i;
 
@@ -2702,4 +2824,44 @@ void st_cmdbar_free(struct ST_CMDBAR *cmdbar)
 	free(cmdbar);
 
 	update_panels();
+}
+
+/*
+ * Set reference to some variable for menu's option
+ */
+bool
+st_menu_set_ref_option(struct ST_MENU *menu,
+					   int code,
+					   int option,
+					   int *refvalue)
+{
+	ST_MENU_ITEM *menu_items = menu->menu_items;
+	int		i = 0;
+
+	if (!IS_REF_OPTION(option))
+	{
+		endwin();
+		fprintf(stderr, "cannot assign reference value with not reference option");
+		exit(1);
+	}
+
+	while (menu_items->text)
+	{
+		if (menu_items->code == code)
+		{
+			menu->options[i] |= option;
+			menu->refvals[i] = refvalue;
+
+			return true;
+		}
+
+		if (menu->submenus[i])
+			if (st_menu_set_ref_option(menu->submenus[i], code, option, refvalue))
+				return true;
+
+		menu_items += 1;
+		i += 1;
+	}
+
+	return false;
 }
