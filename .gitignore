@@ -58,6 +58,7 @@ dkms.conf
 pspg
 
 /autom4te.cache/**
+/configure
 /config.cache
 /config.log
 /config.status
