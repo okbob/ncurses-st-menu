@@ -1,4 +1,4 @@
-#include <ncurses.h>
+#include "st_curses.h"
 
 #ifndef _ST_MENU_H
 
