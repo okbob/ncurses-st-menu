@@ -183,6 +183,13 @@ extern bool st_menu_set_ref_option(struct ST_MENU *menu, int code, int option, i
 
 * the menu state can be updated by function `st_menu_set_option` or function `st_menu_reset_option`.
 
+* the state of item or group of items can be shared between application and st_menu library. You should
+  to use function `st_menu_set_ref_option` and pass pointer to int variable as last parameter of this
+  function. You can use options `ST_MENU_OPTION_MARKED_REF` of automatical marking one item of group
+  items that shares same pointer. Or you can use `ST_MENU_OPTION_SWITCH2_REF` or `ST_MENU_OPTION_SWITCH3_REF`
+  for 2 (0 - off, 1 - off) state or 3 (-1 - unknown, 0 - off, 1 - on) state value switcher. Look to
+  example `simple.c`
+
 ## Example:
 ```c
 #include <langinfo.h>
