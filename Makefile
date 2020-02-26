@@ -61,3 +61,8 @@ clean:
 	rm -f simple
 	rm -f simple2
 	rm -f unicode.o
+	rm -f st_menu.pc
+	rm -f config.make
+	rm -f aclocal.m4
+	rm -f config.log
+	rm -f config.status
