@@ -52,6 +52,14 @@ Mkfile.old
 dkms.conf
 pspg
 
-/config.cache
-/config.log
-/config.status
+config.cache
+config.log
+config.status
+aclocal.m4
+demoapp
+demoapp_sl
+simple
+simple2
+st_menu.pc
+config.make
+autom4te.cache
