@@ -636,7 +636,7 @@ menubar_draw(struct ST_MENU *menu)
 		char	*text = menu_item->text;
 		bool	highlight = false;
 		bool	is_cursor_row = menu->cursor_row == i + 1 && has_focus;
-		bool	is_disabled = menu_item->options & ST_MENU_OPTION_DISABLED;
+		bool	is_disabled = menu->options[i] & ST_MENU_OPTION_DISABLED;
 		int		current_pos;
 
 		/* bar_fields_x_pos holds x positions of menubar items */
@@ -1051,7 +1051,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 			}
 
 			if (is_disabled)
-				wattron(menu->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+				wattron(draw_area, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
 
 			is_extern_accel = (*text == '_' && text[1] != '_');
 
@@ -1162,7 +1162,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 				wattroff(draw_area, COLOR_PAIR(config->cursor_cpn) | config->cursor_attr);
 
 			if (is_disabled)
-				wattroff(menu->window, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
+				wattroff(draw_area, COLOR_PAIR(config->disabled_cpn) | config->disabled_attr);
 		}
 
 		menu_items += 1;
