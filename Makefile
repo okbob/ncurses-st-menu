@@ -106,6 +106,6 @@ ifeq "$(BUILD_OS)" "windows"
 endif
 
 cleanall: clean
-	rm -f *.file config.log config.make config.status st_menu.pc *.awk configure
+	rm -f *.file config.log config.make config.status st_menu.pc *.awk
 
 .PHONY: clean cleanall
