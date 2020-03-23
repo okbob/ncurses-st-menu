@@ -44,6 +44,7 @@ struct ST_MENU
 	PANEL	   *panel;
 	WINDOW	   *shadow_window;
 	PANEL	   *shadow_panel;
+	int			first_row;						/* first visible row */
 	int			cursor_row;
 	int			mouse_row;						/* mouse row where button1 was pressed */
 	int		   *options;						/* state options, initially copyied from menu */
@@ -110,6 +111,8 @@ static void menubar_draw(struct ST_MENU *menu);
 static void pulldownmenu_draw(struct ST_MENU *menu, bool is_top);
 static void cmdbar_draw(struct ST_CMDBAR *cmdbar);
 static bool cmdbar_driver(struct ST_CMDBAR *cmdbar, int c, bool alt, MEVENT *mevent);
+
+static void subtract_correction(WINDOW *s, int *y, int *x);
 
 /*
  * Generic functions
@@ -366,6 +369,7 @@ _save_menustate(struct ST_MENU *menu, int *cursor_rows, int max_rows, int write_
 	}
 
 	cursor_rows[write_pos++] = menu->cursor_row;
+	cursor_rows[write_pos++] = menu->first_row;
 
 	if (menu->submenus)
 	{
@@ -426,6 +430,7 @@ _load_menustate(struct ST_MENU *menu, int *cursor_rows, int read_pos)
 	int		i;
 
 	menu->cursor_row = cursor_rows[read_pos++];
+	menu->first_row = cursor_rows[read_pos++];
 
 	if (menu->submenus)
 	{
@@ -808,9 +813,11 @@ pulldownmenu_ajust_position(struct ST_MENU *menu, int maxy, int maxx)
 	int		rows, cols;
 	int		new_y, new_x;
 	int		y, x;
+	bool	resized = false;
 
 	getbegyx(menu->window, y, x);
 	getmaxyx(menu->window, rows, cols);
+	subtract_correction(menu->window, &y, &x);
 
 	/*
 	 * Hypothesis: when panel is moved, then assigned windows is moved
@@ -886,6 +893,21 @@ pulldownmenu_ajust_position(struct ST_MENU *menu, int maxy, int maxx)
 	if (new_y != y || new_x != x)
 	{
 		int result;
+
+		result = move_panel(menu->panel, new_y, new_x);
+
+		/*
+		 * This is maybe ugly hack. move_panel fails when
+		 * attached window cannot be displayed. So we can try
+		 * resize attached window first.
+		 */
+		if (result != OK)
+		{
+			WINDOW *pw = panel_window(menu->panel);
+
+			wresize(pw, maxy - new_y, menu->cols);
+			replace_panel(menu->panel, pw);
+		}
 
 		result = move_panel(menu->panel, new_y, new_x);
 
@@ -967,7 +989,6 @@ pulldownmenu_draw_shadow(struct ST_MENU *menu)
 		wmaxy = smaxy - 1;
 		wmaxx = smaxx - config->shadow_width;
 
-
 		for (i = 0; i <= smaxy; i++)
 			for (j = 0; j <= smaxx; j++)
 			{
@@ -1042,11 +1063,15 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 	ST_MENU_ITEM	   *menu_items = menu->menu_items;
 	ST_MENU_CONFIG	*config = menu->config;
 	WINDOW	   *draw_area = menu->draw_area;
+	WINDOW	   *loc_draw_area = NULL;
 	int		row = 1;
-	int		maxy, maxx;
+	int		maxy, maxx, y, x;
+	int		dmaxy, dmaxx, dy, dx;
 	int		text_min_x, text_max_x;
 	int		*options = menu->options;
 	bool	force_ascii_art = config->force_ascii_art;
+	int		max_draw_rows = menu->rows;
+	int		i;
 
 	selected_item = NULL;
 
@@ -1067,7 +1092,35 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 
 	update_panels();
 
+	/* clean menu background */
 	werase(menu->window);
+
+	/*
+	 * Now, we would to check if is possible to draw complete draw area on
+	 * screen, and if draw area is good enough for all menu's items.
+	 */
+	getmaxyx(stdscr, maxy, maxx);
+	getmaxyx(draw_area, dmaxy, dmaxx);
+	getbegyx(draw_area, dy, dx);
+
+	subtract_correction(draw_area, &dy, &dx);
+
+	if (dy + dmaxy > maxy || dmaxy < menu->rows )
+	{
+		dmaxy = min_int(maxy - dy, dmaxy);
+		max_draw_rows = draw_box ? (dmaxy - 2) : dmaxy;
+
+		loc_draw_area = subwin(menu->window, dmaxy, dmaxx, dy, dx);
+		draw_area = loc_draw_area;
+
+		if (menu->cursor_row < menu->first_row)
+			menu->first_row = menu->cursor_row;
+
+		if (menu->cursor_row > menu->first_row + max_draw_rows - 1)
+			menu->first_row = menu->cursor_row - max_draw_rows + 1;
+	}
+	else
+		menu->first_row = 1;
 
 	getmaxyx(draw_area, maxy, maxx);
 
@@ -1084,6 +1137,11 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 
 	text_min_x = (draw_box ? 1 : 0) + (config->extra_inner_space ? 1 : 0);
 	text_max_x = maxx - (draw_box ? 1 : 0) - (config->extra_inner_space ? 1 : 0);
+
+	/* skip first firt_row rows from menu */
+	for (i = 1; i < menu->first_row; i++)
+		if (menu_items->text != NULL)
+			menu_items += 1;
 
 	while (menu_items->text != NULL)
 	{
@@ -1176,7 +1234,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 		{
 			char	*text = menu_items->text;
 			bool	highlight = false;
-			bool	is_cursor_row = menu->cursor_row == row;
+			bool	is_cursor_row = menu->cursor_row == offset + 1;
 			bool	first_char = true;
 			bool	is_extern_accel;
 			int		text_y = -1;
@@ -1308,6 +1366,24 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 
 		menu_items += 1;
 		row += 1;
+
+		if (row > max_draw_rows)
+			break;
+	}
+
+	if (draw_box)
+	{
+		if (menu->first_row > 1)
+			mvwprintw(draw_area, 1, maxx - 1, "%lc", config->scroll_up_tag);
+
+		if (menu->first_row + max_draw_rows - 1 < menu->rows)
+			mvwprintw(draw_area, maxy - 2, maxx - 1, "%lc", config->scroll_down_tag);
+	}
+
+	if (loc_draw_area)
+	{
+		wnoutrefresh(loc_draw_area);
+		delwin(loc_draw_area);
 	}
 
 	wnoutrefresh(menu->window);
@@ -1408,6 +1484,35 @@ add_correction(WINDOW *s, int *y, int *x)
 
 		*y += fix_y;
 		*x += fix_x;
+	}
+}
+
+/*
+ * It is correction for window begxy, begx when panel contained
+ * this window was moved.
+ */
+static void
+subtract_correction(WINDOW *s, int *y, int *x)
+{
+	WINDOW *p = wgetparent(s);
+	/*
+	 * Note: function is_subwin is unknown on some
+	 * older ncurses implementations. Don't use it.
+	 */
+	if (p)
+	{
+		int	py, px, sy, sx, oy, ox;
+		int fix_y, fix_x;
+
+		getbegyx(p, py, px);
+		getbegyx(s, sy, sx);
+		getparyx(s, oy, ox);
+
+		fix_y = sy - (py + oy);
+		fix_x = sx - (px + ox);
+
+		*y -= fix_y;
+		*x -= fix_x;
 	}
 }
 
@@ -1622,7 +1727,7 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 
 				/* calculate row from transformed mouse event */
 				if (wmouse_trafo(menu->draw_area, &row, &col, false))
-						mouse_row = row + 1 - (config->draw_box ? 1:0);
+						mouse_row = row + 1 - (config->draw_box ? 1:0) + (menu->first_row - 1);
 			}
 		}
 	}
@@ -2009,6 +2114,7 @@ st_menu_new(ST_MENU_CONFIG *config, ST_MENU_ITEM *menu_items, int begin_y, int b
 	menu->naccelerators = 0;
 	menu->is_menubar = false;
 	menu->mouse_row = -1;
+	menu->first_row = 1;
 
 	/* how much items are in template */
 	menu_item = menu_items;
@@ -2153,6 +2259,7 @@ st_menu_new_menubar2(ST_MENU_CONFIG *barcfg, ST_MENU_CONFIG *pdcfg, ST_MENU_ITEM
 	menu->config = barcfg;
 	menu->menu_items = menu_items;
 	menu->cursor_row = 1;
+	menu->first_row = 1;
 	menu->active_submenu = NULL;
 
 	menu->is_menubar = true;

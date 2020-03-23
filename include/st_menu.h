@@ -115,6 +115,8 @@ typedef struct
 	int		switch_tag_n1;			/* symbol used for switch negative 1 */
 	int		switch_tag_0;			/* symbol used for switch 0 */
 	int		switch_tag_1;			/* symbol used for switch 1 */
+	int		scroll_up_tag;			/* symbol used for possibility to scroll up */
+	int		scroll_down_tag;		/* symbol used for possibility to scroll down */
 } ST_MENU_CONFIG;
 
 struct ST_MENU;
