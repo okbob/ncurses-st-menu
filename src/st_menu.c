@@ -813,7 +813,6 @@ pulldownmenu_ajust_position(struct ST_MENU *menu, int maxy, int maxx)
 	int		rows, cols;
 	int		new_y, new_x;
 	int		y, x;
-	bool	resized = false;
 
 	getbegyx(menu->window, y, x);
 	getmaxyx(menu->window, rows, cols);
@@ -1376,7 +1375,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 		if (menu->first_row > 1)
 			mvwprintw(draw_area, 1, maxx - 1, "%lc", config->scroll_up_tag);
 
-		if (menu->first_row + max_draw_rows - 1 < menu->rows)
+		if (menu->first_row + max_draw_rows - 1 < menu->nitems)
 			mvwprintw(draw_area, maxy - 2, maxx - 1, "%lc", config->scroll_down_tag);
 	}
 
