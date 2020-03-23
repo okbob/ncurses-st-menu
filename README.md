@@ -25,6 +25,8 @@ It does only pulldown menus and menubars, nothing else. It is not complex framew
 
 * Possible serialize and load state of menu objects
 
+* Menu is scrollable when has more items than can be displayed
+
 * The usage pattern is close to original ncurses `menu` library. A menudata are
   created by functions `st_menu_new` or `st_menu_new_menubar`. A function `st_menu_post`
   displays menu, and function `st_menu_unpost` hides menu. Any event can be processed
