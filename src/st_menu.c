@@ -456,7 +456,6 @@ _load_menustate(struct ST_MENU *menu, int *cursor_rows, int read_pos)
 static int
 _load_refvals(struct ST_MENU *menu, int **refvals, int read_pos)
 {
-	int		active_row;
 	int		i;
 
 	if (menu->submenus)
@@ -1030,12 +1029,6 @@ searching_selected_refval_items(struct ST_MENU *menu)
 
 		if (IS_REF_OPTION(menu->options[offset]))
 		{
-			bool	is_cursor_row = menu->cursor_row == row;
-			bool	first_char = true;
-			bool	is_extern_accel;
-			int		text_y = -1;
-			int		text_x = -1;
-
 			if (menu->cursor_row == row)
 			{
 				selected_item = menu_items;
@@ -1064,7 +1057,7 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 	WINDOW	   *draw_area = menu->draw_area;
 	WINDOW	   *loc_draw_area = NULL;
 	int		row = 1;
-	int		maxy, maxx, y, x;
+	int		maxy, maxx;
 	int		dmaxy, dmaxx, dy, dx;
 	int		text_min_x, text_max_x;
 	int		*options = menu->options;
@@ -2067,7 +2060,6 @@ bool
 st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent)
 {
 	bool		aux_unpost_submenu = false;
-	bool		processed;
 
 	/*
 	 * We should to complete mouse click based on two
