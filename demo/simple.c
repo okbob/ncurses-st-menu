@@ -85,24 +85,24 @@ main()
 	int switch_two_demo = -1;
 
 	ST_MENU_ITEM _file[] = {
-		{"E~x~it", 34, "Alt-x"},
-		{NULL, -1, NULL}
+		{"E~x~it", 34, "Alt-x", 0, 0, 0, NULL},
+		{NULL, -1, NULL, 0, 0, 0, NULL}
 	};
 
 	ST_MENU_ITEM _config[] = {
-		{"~F~irst", CONFIG_FIRST, NULL, 1},
-		{"~S~econd", CONFIG_SECOND, NULL, 2},
-		{"~T~hird", CONFIG_THIRD, NULL, 3},
-		{"--", -1, NULL},
-		{"Switch one", CONFIG_SWITCH_ONE, NULL},
-		{"Switch two", CONFIG_SWITCH_TWO, NULL},
-		{NULL, -1, NULL}
+		{"~F~irst", CONFIG_FIRST, NULL, 1, 0, 0, NULL},
+		{"~S~econd", CONFIG_SECOND, NULL, 2, 0, 0, NULL},
+		{"~T~hird", CONFIG_THIRD, NULL, 3, 0, 0, NULL},
+		{"--", -1, NULL, 0, 0, 0, NULL},
+		{"Switch one", CONFIG_SWITCH_ONE, NULL, 0, 0, 0, NULL},
+		{"Switch two", CONFIG_SWITCH_TWO, NULL, 0, 0, 0, NULL},
+		{NULL, -1, NULL, 0, 0, 0, NULL}
 	};
 
 	ST_MENU_ITEM menubar[] = {
 		{"~F~ile", 61, NULL, 0, 0, 0, _file},
 		{"~C~onfig", 62, NULL, 0, 0, 0, _config},
-		{NULL, -1, NULL}
+		{NULL, -1, NULL, 0, 0, 0, NULL}
 	};
 
 	setlocale(LC_ALL, "");

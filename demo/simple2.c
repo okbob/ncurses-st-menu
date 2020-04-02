@@ -75,20 +75,20 @@ main()
 	ST_MENU_ITEM *selected_item;
 
 	ST_MENU_ITEM _encoding[] = {
-		{"_1_latin 1"},
-		{"_2_latin 2"},
-		{"_3_win1250"},
-		{"_4_win1252"},
-		{"_5_utf8"},
-		{NULL, -1, NULL}
+		{"_1_latin 1", 0, NULL, 0, 0, 0, NULL},
+		{"_2_latin 2", 0, NULL, 0, 0, 0, NULL},
+		{"_3_win1250", 0, NULL, 0, 0, 0, NULL},
+		{"_4_win1252", 0, NULL, 0, 0, 0, NULL},
+		{"_5_utf8", 0, NULL, 0, 0, 0, NULL},
+		{NULL, -1, NULL, 0, 0, 0, NULL}
 	};
 
 	ST_MENU_ITEM items[] = {
-		{"~C~opy", 1, "C-c"},
-		{"~P~aste", 2, "C-v"},
-		{"--", -1, NULL},
+		{"~C~opy", 1, "C-c", 0, 0, 0, NULL},
+		{"~P~aste", 2, "C-v", 0, 0, 0, NULL},
+		{"--", -1, NULL, 0, 0, 0, NULL},
 		{"~E~ncoding", 3, NULL, 0, 0, 0, _encoding},
-		{NULL, -1, NULL}
+		{NULL, -1, NULL, 0, 0, 0, NULL}
 	};
 
 	setlocale(LC_ALL, "");
