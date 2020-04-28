@@ -93,7 +93,7 @@ static bool			press_enter = false;
 static bool			command_was_activated = false;
 
 static inline int char_length(ST_MENU_CONFIG *config, const char *c);
-static inline int char_width(ST_MENU_CONFIG *config, char *c, int bytes);
+static inline int char_width(ST_MENU_CONFIG *config, char *c);
 static inline int str_width(ST_MENU_CONFIG *config, char *str);
 static inline char *chr_casexfrm(ST_MENU_CONFIG *config, char *str);
 static inline int wchar_to_utf8(ST_MENU_CONFIG *config, char *str, int n, wchar_t wch);
@@ -179,7 +179,6 @@ newwin2(int* rows, int* cols, int begin_y, int begin_x)
 
 #endif
 
-
 /*
  * Returns bytes of multibyte char
  */
@@ -220,7 +219,7 @@ char_length(ST_MENU_CONFIG *config, const char *c)
  * Retuns display width of char
  */
 static inline int
-char_width(ST_MENU_CONFIG *config, char *c, int bytes)
+char_width(ST_MENU_CONFIG *config, char *c)
 {
 	if (!config->force8bit)
 #ifdef HAVE_LIBUNISTRING
@@ -343,6 +342,9 @@ wchar_to_utf8(ST_MENU_CONFIG *config, char *str, int n, wchar_t wch)
 		result = u8_uctomb((uint8_t *) str, (ucs4_t) wch, n);
 
 #else
+
+		/* be compiler quite */
+		(void) n;
 
 		unicode_to_utf8(wch, (unsigned char *) str, &result);
 
@@ -549,7 +551,7 @@ menutext_displaywidth(ST_MENU_CONFIG *config, char *text, char **accelerator, bo
 		}
 
 		bytes = char_length(config, text);
-		result += char_width(config, text, bytes);
+		result += char_width(config, text);
 		text += bytes;
 
 		first_char = false;
@@ -1198,8 +1200,6 @@ pulldownmenu_draw(struct ST_MENU *menu, bool is_top)
 
 		if (*menu_items->text == '\0' || strncmp(menu_items->text, "--", 2) == 0)
 		{
-			int		i;
-
 			if (draw_box)
 			{
 				wmove(draw_area, row, 0);
@@ -1571,7 +1571,7 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 	if (menu->active_submenu)
 	{
 		bool	_is_nested_pulldown = is_nested_pulldown ? true : (is_menubar ? false : true);
-		bool	unpost_submenu = false;
+		bool	unpost_submenu_loc = false;
 
 		/*
 		 * Key right is used in pulldown menu for access to nested menu.
@@ -1587,9 +1587,9 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 		 * pulldown menu, and nested object should be nested pulldown menu.
 		 */
 		processed = _st_menu_driver(menu->active_submenu, c, alt, mevent,
-												false, _is_nested_pulldown, &unpost_submenu);
+												false, _is_nested_pulldown, &unpost_submenu_loc);
 
-		if (unpost_submenu)
+		if (unpost_submenu_loc)
 		{
 			st_menu_unpost(menu->active_submenu, false);
 			menu->active_submenu = NULL;
@@ -1714,17 +1714,17 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 			}
 			else
 			{
-				int		row, col;
+				int		row_loc, col_loc;
 
-				row = mevent->y;
-				col = mevent->x;
+				row_loc = mevent->y;
+				col_loc = mevent->x;
 
 				/* fix mouse coordinates, if draw_area has "wrong" coordinates */
-				add_correction(menu->draw_area, &row, &col);
+				add_correction(menu->draw_area, &row_loc, &col_loc);
 
 				/* calculate row from transformed mouse event */
-				if (wmouse_trafo(menu->draw_area, &row, &col, false))
-						mouse_row = row + 1 - (config->draw_box ? 1:0) + (menu->first_row - 1);
+				if (wmouse_trafo(menu->draw_area, &row_loc, &col_loc, false))
+						mouse_row = row_loc + 1 - (config->draw_box ? 1:0) + (menu->first_row - 1);
 			}
 		}
 	}
@@ -2557,7 +2557,6 @@ st_menu_set_option(struct ST_MENU *menu, int code, int option, bool value)
 	return false;
 }
 
-
 /*
  * Reduce string to expected display width. The buffer should be
  * preallocated on good enough length - size of src.
@@ -2578,7 +2577,7 @@ reduce_string(ST_MENU_CONFIG *config, int display_width, char *dest, char *src)
 		else
 		{
 			int		chrlen = char_length(config, src);
-			int		dw = char_width(config, src, chrlen);
+			int		dw = char_width(config, src);
 
 			if (char_count < 2)
 			{
@@ -2847,8 +2846,8 @@ st_cmdbar_new(ST_MENU_CONFIG *config, ST_CMDBAR_ITEM *cmdbar_items)
 	if (config->funckey_bar_style)
 	{
 		int		width = maxx / 10;
-		float	extra_width = (maxx % 10) / 10.0;
-		float	extra_width_sum = 0;
+		double	extra_width = (maxx % 10) / 10.0;
+		double	extra_width_sum = 0;
 
 		if (width < 7)
 		{
