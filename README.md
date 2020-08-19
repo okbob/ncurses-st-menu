@@ -147,6 +147,7 @@ main()
 	int		c;
 	MEVENT	mevent;
 	bool	alt;
+	bool	force8bit;
 
 	ST_MENU_ITEM _file[] = {
 		{"E~x~it", 34, "Alt-x"},
@@ -177,7 +178,7 @@ main()
 
 #endif
     
-	config.force8bit = strcmp(config.encoding, "UTF-8") != 0;
+	force8bit = strcmp(config.encoding, "UTF-8") != 0;
 
 	initscr();
 	start_color();
@@ -197,7 +198,7 @@ main()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
-	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2);
+	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2, force8bit, false);
 
 	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED, NULL);
 	mouseinterval(0);

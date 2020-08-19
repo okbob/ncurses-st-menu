@@ -365,9 +365,9 @@ convert_char(conv_table *t, size_t size, wchar_t ucs)
 	while (begin < end)
 	{
 		int mid = (begin + end) / 2;
-		if (t[mid].last < ucs)
+		if ((wchar_t) t[mid].last < ucs)
 			begin = mid + 1;
-		else if (t[mid].first > ucs)
+		else if ((wchar_t) t[mid].first > ucs)
 			end = mid;
 		else if ((ucs - t[mid].first) % t[mid].step == 0)
 			return ucs + t[mid].offset;
@@ -390,9 +390,9 @@ find_in_range(range_table *t, size_t size, wchar_t ucs)
 	{
 		int mid = (begin + end) / 2;
 
-		if (t[mid].last < ucs)
+		if ((wchar_t) t[mid].last < ucs)
 			begin = mid + 1;
-		else if (t[mid].first > ucs)
+		else if ((wchar_t) t[mid].first > ucs)
 			end = mid;
 		else
 			return (ucs - t[mid].first) % t[mid].step == 0;

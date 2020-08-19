@@ -130,7 +130,7 @@ main()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 
 	/* load style, possible alternatives: ST_MENU_STYLE_MC, ST_MENU_STYLE_DOS */
-	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2);
+	st_menu_load_style(&config, ST_MENU_STYLE_VISION, 2, false, false);
 
 	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED, NULL);
 	mouseinterval(0);
