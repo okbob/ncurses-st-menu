@@ -377,7 +377,10 @@ main()
 	/* prepare state variable for menubar */
 	menu = st_menu_new_menubar(&config, menubar);
 
-	st_menu_enable_option(menu, 81, ST_MENU_OPTION_MARKED);
+	/* default theme is Vision, mark it in menu list */
+	st_menu_enable_option(menu, 72, ST_MENU_OPTION_MARKED);
+
+
 	st_menu_enable_option(menu, 50, ST_MENU_OPTION_DISABLED);
 	st_menu_enable_option(menu, 51, ST_MENU_OPTION_DISABLED);
 
