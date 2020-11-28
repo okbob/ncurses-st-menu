@@ -807,7 +807,7 @@ debug_print_size(WINDOW *window, char *name)
 #endif
 
 /*
- * adjust pulldown possition - move panels from ideal position to any position
+ * adjust pulldown position - move panels from ideal position to any position
  * where can be fully displayed.
  */
 static void
@@ -1699,7 +1699,7 @@ _st_menu_driver(struct ST_MENU *menu, int c, bool alt, MEVENT *mevent,
 						/* last menubar field get mouse to right corner */
 						maxx = i + 1 < menu->nitems ? menu->bar_fields_x_pos[i + 1] - chars_before : mevent->x + 1;
 
-						/* transform possitions to target menu code */
+						/* transform positions to target menu code */
 						if (mevent->x >= minx && mevent->x < maxx)
 						{
 							mouse_row = i + 1;
