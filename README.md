@@ -107,7 +107,7 @@ repeat:
 	c = getch();
 
 	/*
-	 * Read mouse event when it is possible. Do it now, before st_meny_driver call,
+	 * Read mouse event when it is possible. Do it now, before st_menu_driver call,
 	 * as protection to unwanted multiple call of getmouse function. For one mouse
 	 * event, it returns data only once time.
 	 */
