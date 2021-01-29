@@ -147,6 +147,8 @@ main()
 	bool	alt;
 	bool	requested_exit = false;
 	int		style = 1;
+	bool	xterm_mouse_mode = false;
+	char   *term_str;
 
 	WINDOW *w1 = NULL;
 	WINDOW *w2 = NULL;
@@ -311,6 +313,7 @@ main()
 	config.force8bit = strcmp(config.encoding, "UTF-8") != 0;
 
 	initscr();
+
 	start_color();
 	clear();
 	cbreak();
@@ -332,12 +335,36 @@ main()
 
 #if NCURSES_MOUSE_VERSION > 1
 
+	term_str = getenv("TERM");
+	if (term_str && strstr(term_str, "xterm"))
+		xterm_mouse_mode = true;
+	else
+	{
+		char   *kmous_str = tigetstr("kmous");
+
+		if (kmous_str != NULL && kmous_str != (char *) -1)
+		{
+			if (strcmp(kmous_str, "\033[M") == 0)
+				xterm_mouse_mode = true;
+		}
+	}
+
 	/* BUTTON1_PRESSED | BUTTON1_RELEASED are mandatory enabled */
-	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED | BUTTON4_PRESSED | BUTTON5_PRESSED, NULL);
+	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED | BUTTON4_PRESSED | BUTTON5_PRESSED |
+			  (xterm_mouse_mode ? REPORT_MOUSE_POSITION : 0), NULL);
+
+	if (xterm_mouse_mode)
+	{
+		printf("\033[?1002h");
+		fflush(stdout);
+	}
 
 #else
 
 	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED, NULL);
+
+	(void) xterm_mouse_mode;
+	(void) term_str;
 
 #endif
 
@@ -556,6 +583,12 @@ main()
 	}
 
 	endwin();
+
+	if (xterm_mouse_mode)
+	{
+		printf("\033[?100l");
+		fflush(stdout);
+	}
 
 	st_menu_unpost(menu, true);
 	st_menu_free(menu);
