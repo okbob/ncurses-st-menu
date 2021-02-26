@@ -205,7 +205,7 @@ main()
 
 	/* prepare main window */
 	wbkgd(stdscr, COLOR_PAIR(1));
-    wclear(stdscr);
+	wclear(stdscr);
 	wrefresh(stdscr);
 
 	/*
