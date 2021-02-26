@@ -7,6 +7,7 @@
 #include "st_curses.h"
 #include "st_panel.h"
 #include <stdlib.h>
+#include <signal.h>
 #include <string.h>
 
 #ifdef HAVE_LIBUNISTRING
@@ -33,6 +34,9 @@ FILE   *debug_pipe = NULL;
 int		debug_eventno = 0;
 
 #endif
+
+bool	active_xterm_mouse_mode = false;
+bool	active_ncurses = false;
 
 /*
  * Read event. When event is mouse event, read mouse data
@@ -125,6 +129,27 @@ repeat:
 #endif
 
 	return c;
+}
+
+static void
+exit_demo(void)
+{
+	if (active_xterm_mouse_mode)
+	{
+		printf("\033[?1002l");
+		fflush(stdout);
+	}
+
+	if (active_ncurses)
+		endwin();
+}
+
+static void
+SigintHandler(int sig_num)
+{
+	(void) sig_num;
+
+	exit(1);
 }
 
 /*
@@ -291,6 +316,9 @@ main()
 
 #endif
 
+	signal(SIGINT, SigintHandler);
+	atexit(exit_demo);
+
 	setlocale(LC_ALL, "");
 
 	#ifdef HAVE_LANGINFO_CODESET
@@ -313,6 +341,8 @@ main()
 	config.force8bit = strcmp(config.encoding, "UTF-8") != 0;
 
 	initscr();
+
+	active_ncurses = true;
 
 	start_color();
 	clear();
@@ -357,6 +387,8 @@ main()
 	{
 		printf("\033[?1002h");
 		fflush(stdout);
+
+		active_xterm_mouse_mode = true;
 	}
 
 #else
@@ -586,7 +618,7 @@ main()
 
 	if (xterm_mouse_mode)
 	{
-		printf("\033[?100l");
+		printf("\033[?1002l");
 		fflush(stdout);
 	}
 
