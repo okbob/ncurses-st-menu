@@ -161,8 +161,8 @@ main()
 	int		maxx, maxy;
 	ST_MENU_CONFIG  config;
 	ST_MENU_CONFIG config_b;
-	ST_MENU_ITEM	   *active_item;
-	ST_CMDBAR_ITEM	   *active_command;
+	ST_MENU_ITEM	   *active_item = NULL;
+	ST_CMDBAR_ITEM	   *active_command = NULL;
 	struct ST_MENU *menu;
 	struct ST_CMDBAR *cmdbar;
 	bool	activated;
