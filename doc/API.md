@@ -149,6 +149,8 @@ extern bool st_menu_reset_all_options(struct ST_MENU *menu, int option);
 
 extern bool st_menu_set_ref_option(struct ST_MENU *menu, int code, int option, int *refvalue);
 
+extern void st_menu_set_direct_color(bool direct_color);
+
 ```
 
 ## Description
@@ -189,6 +191,9 @@ extern bool st_menu_set_ref_option(struct ST_MENU *menu, int code, int option, i
   items that shares same pointer. Or you can use `ST_MENU_OPTION_SWITCH2_REF` or `ST_MENU_OPTION_SWITCH3_REF`
   for 2 (0 - off, 1 - off) state or 3 (-1 - unknown, 0 - off, 1 - on) state value switcher. Look to
   example `simple.c`
+
+* `st_menu_set_direct_color` allows to set direct color mode. It should be used, when `TERM` is
+  `xterm-direct` or `tmux-direct`. The default is false.
 
 ## Example:
 ```c
