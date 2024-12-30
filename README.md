@@ -56,7 +56,7 @@ make
 NOTE: To generate a debug build append `--enable-debug` to the configure statement.
 
 Creates `demoapp` and `demoapp_sl`. `demoapp_sl` uses shared library - and it can be executed by
-`LD_LIBRARY_PATH=. /.demoapp_sl`. Note: when you doesn't modify `LD_LIBRARY_PATH`, you should
+`LD_LIBRARY_PATH=. ./demoapp_sl`. Note: when you doesn't modify `LD_LIBRARY_PATH`, you should
 to run `make install` for correct behave of `demoapp_sl` (demo with shared library).
 
 `Command|Set style` submenu is active - you can change styles interactivly.
